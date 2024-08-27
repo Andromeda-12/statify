@@ -1,15 +1,27 @@
-from selenium.webdriver.edge.options import Options
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
+import time
+import schedule
+from loguru import logger
+from config import APPLICATION_RUN_TIME, SEND_STATUS_NOTIFICATION_TIME
+from run_application import run_application
+from setup_logger import setup_logger
+from notifier import Notifier
+
+@logger.catch
+def main():
+    logger.info('Запуск')
+    notifier = Notifier()
+    setup_logger(notifier)
+    
+    # Запуск каждый день в определенное время
+    schedule.every().day.at(APPLICATION_RUN_TIME).do(run_application)
+    logger.info('Установлен старт на {time}', time=APPLICATION_RUN_TIME)
+
+    # Отправка уведомления каждые два дня
+    schedule.every().day.at(SEND_STATUS_NOTIFICATION_TIME).do(notifier.send_status_notification)
+    
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
 
 if __name__ == '__main__':
-    options = Options()
-    options.add_argument('--ignore-certificate-errors')
-    options.add_argument("--start-maximized")
-    options.add_experimental_option('excludeSwitches', ['enable-logging'])
-    service = Service('./msedgedriver.exe')
-    browser = webdriver.Edge(service=service, options=options)
-    browser.get("https://www.selenium.dev/selenium/web/web-form.html")
-    print(browser.title)
-    while(True):
-       pass
+    main()
