@@ -1,13 +1,19 @@
-EDGE_DRIVER_PATH='./msedgedriver1.exe'
+from dotenv import load_dotenv
+import os
 
-START_URL = "https://www.selenium.dev/selenium/web/web-form.html"
-SECOND_URL = "https://intoli.com/blog/not-possible-to-block-chrome-headless/chrome-headless-test.html"
+# Загружаем переменные из .env файла
+load_dotenv()
 
-TELEGRAM_BOT_TOKEN = '7051587882:AAEtjuuz9eohyNrqoWZ30dSbiJKiPB-oAOM'
-TELEGRAM_CHAT_ID = '438055440'
+EDGE_DRIVER_PATH = os.getenv('EDGE_DRIVER_PATH')
 
-TEST_ACCOUNT_USERNAME = 'your-test-account-username'
-TEST_ACCOUNT_PASSWORD = 'your-test-account-password'
+START_URL = os.getenv('START_URL')
+SECOND_URL = os.getenv('SECOND_URL')
 
-APPLICATION_RUN_TIME = '10:00'
-SEND_STATUS_NOTIFICATION_TIME='14:00'
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+
+TEST_ACCOUNT_USERNAME = os.getenv('TEST_ACCOUNT_USERNAME')
+TEST_ACCOUNT_PASSWORD = os.getenv('TEST_ACCOUNT_PASSWORD')
+
+APPLICATION_RUN_TIME = os.getenv('APPLICATION_RUN_TIME')
+SEND_STATUS_NOTIFICATION_TIME = os.getenv('SEND_STATUS_NOTIFICATION_TIME')
