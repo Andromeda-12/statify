@@ -1,9 +1,12 @@
 from loguru import logger
+from config import IS_DEV
 from run_application import run_application
 from setup_logger import setup_dev_logger
 from notifier import Notifier
+
 # import time
 # import schedule
+
 
 @logger.catch
 def main():
@@ -17,5 +20,6 @@ def main():
     #     schedule.run_pending()
     #     time.sleep(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
