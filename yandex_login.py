@@ -5,7 +5,12 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from browser import Browser
-from config import IS_DEV, TEST_ACCOUNT_COOKIE_FILE_NAME
+from config import (
+    ACCOUNT_FIRSTNAME,
+    ACCOUNT_LASTNAME,
+    IS_DEV,
+    TEST_ACCOUNT_COOKIE_FILE_NAME,
+)
 from credentials_provider import (
     CredentialsProvider,
     DevCredentialsProvider,
@@ -39,6 +44,7 @@ def try_login_with_credentials(browser: Browser):
             logger.info("Вход выполнен успешно")
             break  # Выходим из цикла, если вход успешен
         else:
+            browser.close_browser()
             logger.info("Не удалось войти, пробуем снова...")
 
 
@@ -84,7 +90,7 @@ def login_yandex(
                 return is_dev_account_login(browser, password)
 
             logger.info("Вход в аккаунт")
-            return is_account_registration_and_login()
+            return is_account_registration_and_login(browser, password)
 
         except Exception as e:
             logger.error(f"Ошибка при попытке ввести логин или пароль: {e}")
@@ -107,12 +113,16 @@ def retry_send_sms(browser: Browser):
         )
         retry_button.click()
         logger.info("Запрос на повторную отправку СМС")
-        time.sleep(30)  # Ждем 30 секунд перед повторной попыткой
     except Exception as e:
         logger.error(f"Не получилось отправить новое смс: {e}")
 
 
 def is_dev_account_login(browser: Browser, password: str):
+    """
+    Получилось ли войти в тестовый аккаунт
+
+    :return: True, если получилось войти, иначе False
+    """
     try:
         logger.info("Логика входа в тестовый аккаунт")
         accounts_list_div = browser.wait_for_condition(
@@ -147,19 +157,93 @@ def is_dev_account_login(browser: Browser, password: str):
     except Exception as e:
         logger.error(f"Ошибка при попытке войти в тестовый аккаунт: {e}")
         return False
-    
+
+
 def is_account_registration_and_login(browser: Browser, password: str):
-    pass
+    """
+    Получилось ли зарегистрироваться и войти в аккаунт
+
+    :return: True, если получилось войти, иначе False
+    """
+    try:
+        firstname_field = browser.wait_for_condition(
+            EC.presence_of_element_located((By.ID, "passp-field-firstname"))
+        )
+        firstname_field.send_keys(ACCOUNT_FIRSTNAME)
+        logger.info(f"Введено имя")
+
+        lastname_field = browser.wait_for_condition(
+            EC.presence_of_element_located((By.ID, "passp-field-lastname"))
+        )
+        lastname_field.send_keys(ACCOUNT_LASTNAME)
+        lastname_field.send_keys(Keys.RETURN)
+        logger.info(f"Введена фамилия")
+
+        # Далее
+        handle_action_button(browser)
+        # Создать аккаунт
+        handle_create_account_button(browser)
+        # Принимаю
+        handle_action_button(browser)
+        # Не сейчас
+        handle_button_not_now(browser)
+
+        try:
+            browser.wait_for_condition(EC.url_to_be("https://id.yandex.ru/"))
+            logger.success("Вход в аккаунт успешно выполнен")
+            return True
+        except Exception as e:
+            logger.error(
+                f"Ошибка при ожидании перехода на страницу https://id.yandex.ru/: {e}"
+            )
+            return False
+
+    except Exception as e:
+        logger.error(f"Ошибка при попытке войти в аккаунт: {e}")
+        return False
+
+
+def handle_create_account_button(browser: Browser):
+    try:
+        # Ожидаем, когда кнопка "Создать аккаунт" станет кликабельной
+        browser.wait_for_condition(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[data-t="button:default:accounts: createIDBtn"]')
+            )
+        )
+        create_account_button = browser.driver.find_element(
+            By.CSS_SELECTOR, 'button[data-t="button:default:accounts: createIDBtn"]'
+        )
+        create_account_button.click()
+        logger.info(f'Нажата кнопка "Создать аккаунт"')
+    except:
+        logger.error(f'Кнопка "Создать аккаунт" не появилась')
+
+
+def handle_action_button(browser: Browser):
+    try:
+        # Ожидаем, когда кнопка "Далее" станет кликабельной
+        browser.wait_for_condition(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-t="button:action"]'))
+        )
+        action_button = browser.driver.find_element(
+            By.CSS_SELECTOR, '[data-t="button:action"]'
+        )
+        action_button.click()
+        logger.info(f'Нажата кнопка "Далее"')
+    except:
+        logger.error(f'Кнопка "Далее" не появилась')
 
 
 def handle_button_not_now(browser: Browser):
     try:
-        # Находим кнопку "НЕ СЕЙЧАС"
+        # Находим кнопку "Не сейчас"
         button = browser.wait_for_condition(
             EC.presence_of_element_located(
                 (By.CSS_SELECTOR, '[data-t="button:pseudo"]')
             )
         )
         button.click()
+        logger.info(f'Нажата кнопка "Не сейчас"')
     except:
-        logger.warning(f'Кнопка "НЕ СЕЙЧАС" не появилась')
+        logger.error(f'Кнопка "Не сейчас" не появилась')
