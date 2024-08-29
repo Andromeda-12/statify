@@ -3,8 +3,12 @@ from selenium import webdriver
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import TimeoutException
 from config import EDGE_DRIVER_PATH
+
+CONDITION_WAIT_TIME = 60
+
 
 class Browser:
     def __init__(self):
@@ -43,17 +47,19 @@ class Browser:
                 logger.error(f"Ошибка при закрытии браузера: {e}")
         else:
             logger.warning("Браузер не был запущен или уже закрыт.")
-            
-    def wait_for_condition(self, func):
+
+    def wait_for_condition(self, func) -> WebElement:
         """
-        Ожидание выполнения условия в течение 60 секунд.
-        
-        :param func: Функция ожидания, которая должна вернуть True, когда условие выполнено.
-        :return: Результат выполнения функции `func`, если условие выполнено в течение 60 секунд.
-        :raises TimeoutException: Если условие не выполнено в течение 60 секунд.
+        Ожидание выполнения условия
+
+        :param func: Функция ожидания, которая должна вернуть True, когда условие выполнено
+        :return: Результат выполнения функции `func`, если условие выполнено
+        :raises TimeoutException: Если условие не выполнено
         """
         try:
-            return WebDriverWait(self.driver, 60).until(func)
+            return WebDriverWait(self.driver, CONDITION_WAIT_TIME).until(func)
         except TimeoutException:
-            logger.error("Условие не было выполнено в течение 60 секунд.")
+            logger.error(
+                f"Условие не было выполнено в течение {CONDITION_WAIT_TIME} секунд."
+            )
             raise
