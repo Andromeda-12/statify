@@ -15,7 +15,7 @@ def setup_logger(notifier):
     logger.add(
         notifier.send_notification,
         format="Произошла ошибка\n\n{time:MMMM D, YYYY > HH:mm:ss} | {level} | {name}:{function}:{line} | {message}",
-        level="ERROR",
+        level="CRITICAL",
     )
     # Логирование в файл, новый файл создается каждый день в 9:00
     logger.add(
