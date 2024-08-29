@@ -42,9 +42,7 @@ class SMS365CredentialsProvider(CredentialsProvider):
         self.sms_waiting_time = (
             90  # Время ожидания в секундах, за которое должно прийти смс
         )
-        self.total_sms_waiting_time = (
-            185  # Общее время ожидания в секундах, за которое должно прийти смс для этого номера
-        )
+        self.total_sms_waiting_time = 185  # Общее время ожидания в секундах, за которое должно прийти смс для этого номера
         # Две попытки по 90 секунд, если за эти попытки не пришло смс, через 5 секунд отменяем вход через этот номер
 
     def get_credentials(self) -> Credentials:
@@ -94,16 +92,16 @@ class SMS365CredentialsProvider(CredentialsProvider):
 
                     else:
                         logger.error(f"Неизвестный ответ от сервиса: {result}")
-                        raise Exception(f"Неизвестный ответ от сервиса: {result}")
+                        time.sleep(10)
                 else:
                     error_message = f"Ошибка при запросе к сервису 365sms: {response.status_code}, сообщение: {response.text}"
                     logger.error(error_message)
-                    raise Exception(error_message)
+                    time.sleep(10)
 
             except requests.RequestException as e:
                 error_message = f"Ошибка сети при обращении к 365sms: {e}"
                 logger.error(error_message)
-                raise Exception(error_message)
+                time.sleep(10)
 
     def get_sms_code(
         self, activation_id: str, retry_action: Callable[[], None]
@@ -149,7 +147,7 @@ class SMS365CredentialsProvider(CredentialsProvider):
                 # Проверка времени выполнения
                 elapsed_time = time.time() - start_time
                 if elapsed_time > self.total_sms_waiting_time:
-                    logger.error(
+                    logger.warning(
                         f"Не удалось получить код активации на текущий номер за {self.total_sms_waiting_time} секунд"
                     )
                     return None
