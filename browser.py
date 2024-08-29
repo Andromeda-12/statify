@@ -13,6 +13,7 @@ CONDITION_WAIT_TIME = 60
 class Browser:
     def __init__(self):
         self.driver = None
+        self.is_open = False
         self.options = Options()
         self._configure_options()
 
@@ -32,7 +33,8 @@ class Browser:
         try:
             service = Service(EDGE_DRIVER_PATH)
             self.driver = webdriver.Edge(service=service, options=self.options)
-            logger.success("Браузер успешно запущен.")
+            self.is_open = True
+            logger.success("Браузер успешно запущен")
         except Exception as e:
             logger.error(f"Ошибка при запуске браузера: {e}")
             self.driver = None
@@ -42,6 +44,7 @@ class Browser:
         if self.driver:
             try:
                 self.driver.quit()
+                self.is_open = False
                 logger.success("Браузер успешно закрыт")
             except Exception as e:
                 logger.error(f"Ошибка при закрытии браузера: {e}")
