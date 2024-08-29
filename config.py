@@ -1,11 +1,21 @@
 import os
+import argparse
 from dotenv import load_dotenv
 
 # Загружаем переменные из .env файла
 load_dotenv()
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run application.")
+    parser.add_argument("--dev", action="store_true", help="Run in development mode")
+    return parser.parse_args()
+
+
+args = parse_args()
+
 # Флаг для режима разработки
-IS_DEV = os.getenv('IS_DEV', 'false').lower() == 'true'
+IS_DEV = args.dev
 
 # Путь к драйверу
 EDGE_DRIVER_PATH = os.getenv("EDGE_DRIVER_PATH")

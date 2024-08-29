@@ -1,10 +1,11 @@
 import time
 import schedule
 from loguru import logger
-from config import APPLICATION_RUN_TIME, SEND_STATUS_NOTIFICATION_TIME
+from config import APPLICATION_RUN_TIME, IS_DEV, SEND_STATUS_NOTIFICATION_TIME
 from run_application import run_application
 from setup_logger import setup_logger
 from notifier import Notifier
+from dev_main import main as dev_main
 
 
 @logger.catch
@@ -28,4 +29,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if IS_DEV:
+        dev_main()
+    else:
+        main()

@@ -1,5 +1,4 @@
 from loguru import logger
-from config import IS_DEV
 from run_application import run_application
 from setup_logger import setup_dev_logger
 from notifier import Notifier
@@ -11,6 +10,7 @@ from notifier import Notifier
 @logger.catch
 def main():
     setup_dev_logger()
+    logger.info("Запуск в режиме разработки")
     run_application()
     
     # Проверка отправки уведомлений
