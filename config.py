@@ -8,7 +8,7 @@ load_dotenv()
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run application.")
-    parser.add_argument("--dev", action="store_true", help="Run in development mode")
+    parser.add_argument("--dev", action="store_true", help="run in development mode")
     return parser.parse_args()
 
 
@@ -36,6 +36,7 @@ ACCOUNT_PASSWORD = os.getenv("ACCOUNT_PASSWORD")
 # Данные для входа в тестовый аккаунт
 TEST_ACCOUNT_USERNAME = os.getenv("TEST_ACCOUNT_USERNAME")
 TEST_ACCOUNT_PASSWORD = os.getenv("TEST_ACCOUNT_PASSWORD")
+TEST_ACCOUNT_COOKIE_FILE_NAME = 'test_account_cookie'
 
 # Время запуска приложения и отправки уведомлений
 APPLICATION_RUN_TIME = os.getenv("APPLICATION_RUN_TIME")

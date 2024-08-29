@@ -1,44 +1,46 @@
+import pickle
 import time
 from loguru import logger
 from browser import Browser
-from config import IS_DEV, SECOND_URL, START_URL
-from credentials_provider import DevCredentialsProvider, SMS365CredentialsProvider
-from yandex_login import login_yandex
+from config import IS_DEV, SECOND_URL, START_URL, TEST_ACCOUNT_COOKIE_FILE_NAME
+from yandex_login import try_login_with_credentials
 
 
 def run_application():
     logger.info("Старт")
-    # Выбор поставщика учетных данных в зависимости от режима разработки
-    if IS_DEV:
-        credentials_provider = DevCredentialsProvider()
-    else:
-        credentials_provider = SMS365CredentialsProvider()
+    browser = Browser()
 
-    while True:
-        # Получение учетных данных
-        logger.info("Получение данных для входа в яндекс")
-        credentials = credentials_provider.get_credentials()
-        logger.success("Данные для входа в Яндекс получены")
-
-        browser = Browser()
-        logger.info("Запуск браузера")
-        browser.start_browser()
-
-        try:
-            # Попытка войти на сайт
-            if login_yandex(
-                browser,
-                credentials_provider,
-                credentials["login"],
-                credentials["password"],
-                credentials["activation_id"],
-            ):
-                logger.info("Вход выполнен успешно")
-                browser.driver.get(START_URL)
-                browser.driver.get(SECOND_URL)
-                time.sleep(10)  # Подождем 10 секунд для наблюдения
-                break  # Выходим из цикла, если вход успешен
+    try:
+        if IS_DEV:
+            logger.info("Получение кук для тестового аккаунта")
+            cookies = load_cookies()
+            if cookies is None:
+                logger.info("Куков нет, попытка залогиниться в яндекс")
+                # Пытаемся получить данные для входа, после удачной попытки браузер уже будет открыт
+                try_login_with_credentials(browser)
             else:
-                logger.info("Не удалось войти, пробуем снова...")
-        finally:
-            return browser.close_browser()
+                logger.info("Куки есть, устанавливаем их браузеру")
+                add_cookies_to_browser(browser)
+        else:
+            # Пытаемся получить данные для входа, после удачной попытки браузер уже будет открыт
+            try_login_with_credentials(browser)
+
+        browser.driver.get(START_URL)
+        browser.driver.get(SECOND_URL)
+    finally:
+        return browser.close_browser()
+
+
+def load_cookies():
+    try:
+        with open(TEST_ACCOUNT_COOKIE_FILE_NAME, "rb") as file:
+            cookies = pickle.load(file)
+            return cookies
+    except (FileNotFoundError, pickle.UnpicklingError) as e:
+        logger.warning(f"Ошибка при загрузке куки: {e}")
+        return None
+
+
+def add_cookies_to_browser(browser: Browser, cookies):
+    for cookie in cookies:
+        browser.driver.add_cookie(cookie)
