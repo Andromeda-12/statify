@@ -39,9 +39,13 @@ class CredentialsProvider(ABC):
 class SMS365CredentialsProvider(CredentialsProvider):
     def __init__(self):
         self.get_credentials_wait_time = 5
-        self.get_sms_code_wait_time = (
-            180  # Время ожидания в секундах, за которое должно прийти смс
+        self.sms_waiting_time = (
+            90  # Время ожидания в секундах, за которое должно прийти смс
         )
+        self.total_sms_waiting_time = (
+            185  # Общее время ожидания в секундах, за которое должно прийти смс для этого номера
+        )
+        # Две попытки по 90 секунд, если за эти попытки не пришло смс, через 5 секунд отменяем вход через этот номер
 
     def get_credentials(self) -> Credentials:
         logger.info("Покупка номера на 365sms")
@@ -76,6 +80,7 @@ class SMS365CredentialsProvider(CredentialsProvider):
                         )
                         # Ждем указанное количество секунд перед повторной попыткой
                         time.sleep(self.get_credentials_wait_time)
+                        continue
 
                     elif result == "NO_BALANCE":
                         logger.error(f"NO_BALANCE: Недостаточно средств на аккаунте.")
@@ -106,6 +111,8 @@ class SMS365CredentialsProvider(CredentialsProvider):
         start_time = time.time()
         while True:
             try:
+                # СМС уже отправлено, ожидаем
+                time.sleep(self.sms_waiting_time)
                 # Запрос на получение статуса
                 response = requests.get(
                     f"https://365sms.ru/stubs/handler_api.php?api_key={API_365SMS_KEY}&action=getStatus&id={activation_id}"
@@ -121,11 +128,10 @@ class SMS365CredentialsProvider(CredentialsProvider):
 
                     elif result == "STATUS_WAIT_CODE":
                         logger.info(
-                            "STATUS_WAIT_CODE: Ожидание получения кода, повторная попытка через 30 секунд"
+                            f"STATUS_WAIT_CODE: Ожидание получения кода, повторная попытка через {self.sms_waiting_time} секунд"
                         )
                         # Нажатие на кнопку повторного запроса
                         retry_action()
-                        time.sleep(30)
 
                     else:
                         logger.error(
@@ -142,9 +148,9 @@ class SMS365CredentialsProvider(CredentialsProvider):
 
                 # Проверка времени выполнения
                 elapsed_time = time.time() - start_time
-                if elapsed_time > self.get_sms_code_wait_time:
+                if elapsed_time > self.total_sms_waiting_time:
                     logger.error(
-                        f"Не удалось получить код активации за {self.get_sms_code_wait_time} секунд"
+                        f"Не удалось получить код активации на текущий номер за {self.total_sms_waiting_time} секунд"
                     )
                     return None
 
