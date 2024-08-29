@@ -32,6 +32,8 @@ API_365SMS_KEY = os.getenv("API_365SMS_KEY")
 
 # Пароль для нового аккаунта
 ACCOUNT_PASSWORD = os.getenv("ACCOUNT_PASSWORD")
+ACCOUNT_FIRSTNAME = 'Иван'
+ACCOUNT_LASTNAME = 'Иванов'
 
 # Данные для входа в тестовый аккаунт
 TEST_ACCOUNT_USERNAME = os.getenv("TEST_ACCOUNT_USERNAME")
