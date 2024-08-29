@@ -8,7 +8,7 @@ from notifier import Notifier
 from dev_main import main as dev_main
 
 
-@logger.catch
+@logger.catch(level="CRITICAL")
 def main():
     logger.info("Запуск")
     notifier = Notifier()

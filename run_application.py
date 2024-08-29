@@ -25,10 +25,16 @@ def run_application():
             # Пытаемся получить данные для входа, после удачной попытки браузер уже будет открыт
             try_login_with_credentials(browser)
 
-        browser.driver.get(START_URL)
-        browser.driver.get(SECOND_URL)
+        # Браузер уже открыт, повторно открывать не нужно
+
+        browser.driver.get("https://yandex.ru/maps")
+        logger.info(f"Открыты карты яндекса")
+
+        time.sleep(60)
     finally:
-        return browser.close_browser()
+        if browser.is_open:
+            browser.close_browser()
+        return
 
 
 def load_cookies():
