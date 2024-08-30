@@ -1,13 +1,9 @@
-import pickle
-import time
 from loguru import logger
 from browser import Browser
-from config import IS_DEV, TEST_ACCOUNT_COOKIE_FILE_NAME
-from yandex_login import (
-    check_is_successful_logged_in,
-    try_login_with_cookies,
-    try_login_with_credentials,
-)
+from establishments_data import establishments_data
+from establishments_logic import get_max_repeats, process_establishments
+from helpers import declension
+from yandex_login import login_to_yandex_account
 
 
 def run_application():
@@ -15,41 +11,38 @@ def run_application():
     browser = Browser()
 
     try:
-        if IS_DEV:
-            logger.info("Получение кук для тестового аккаунта")
-            cookies = load_cookies()
-            if cookies is None:
-                logger.info("Куков нет, попытка залогиниться в яндекс")
-                # Пытаемся получить данные для входа, после удачной попытки браузер уже будет открыт
-                try_login_with_credentials(browser)
+        max_repeats = get_max_repeats(establishments_data)
+
+        # Инициализация словаря для отслеживания количества успешных обработок
+        final_status = {
+            establishment["name"]: 0 for establishment in establishments_data
+        }
+
+        for repetition_number in range(0, max_repeats):
+            # Запуск браузера и вход в аккаунт
+            login_to_yandex_account(browser)
+            process_establishments(
+                browser, establishments_data, repetition_number, final_status
+            )
+
+        for establishment in establishments_data:
+            name = establishment["name"]
+            repeats_required = establishment["repeats"]
+
+            if final_status[name] == repeats_required:
+                logger.success(
+                    f"Заведение '{name}' успешно обработано {repeats_required} {declension(repeats_required, 'раз', 'раза', 'раз')}"
+                )
             else:
-                logger.info("Куки есть, устанавливаем их браузеру")
-                try_login_with_cookies(browser, cookies)
-        else:
-            # Пытаемся получить данные для входа, после удачной попытки браузер уже будет открыт
-            try_login_with_credentials(browser)
+                logger.critical(
+                    f"Заведение '{name}' не было обработано {repeats_required} {declension(repeats_required, 'раз', 'раза', 'раз')}. "
+                    f"Успешные обработки: {final_status[name]}/{repeats_required}. "
+                    f"Ниша: {establishment['niche']}, Координаты: {establishment['coordinates']}"
+                )
 
-        if not check_is_successful_logged_in(browser):
-            return
-
-        # Браузер уже открыт, повторно открывать не нужно
-        browser.driver.get("https://yandex.ru/maps")
-        logger.info(f"Открыты карты яндекса")
-
-        time.sleep(60)
+        # Завершение работы
     except Exception as e:
-        logger.error(e)
+        logger.error(f"Ошибка в процессе выполнения: {e}")
     finally:
         if browser.is_open:
             browser.close_browser()
-        return
-
-
-def load_cookies():
-    try:
-        with open(TEST_ACCOUNT_COOKIE_FILE_NAME, "rb") as file:
-            cookies = pickle.load(file)
-            return cookies
-    except (FileNotFoundError, pickle.UnpicklingError) as e:
-        logger.warning(f"Ошибка при загрузке куки: {e}")
-        return None

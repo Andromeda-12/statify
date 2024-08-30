@@ -18,6 +18,31 @@ from credentials_provider import (
 )
 
 
+def login_to_yandex_account(browser: Browser):
+    """Выполнить вход в аккаунт Яндекс."""
+    try:
+        if IS_DEV:
+            logger.info("Получение кук для тестового аккаунта")
+            cookies = load_cookies()
+            if cookies is None:
+                logger.info("Куков нет, попытка залогиниться в яндекс")
+                try_login_with_credentials(browser)
+            else:
+                logger.info("Куки есть, устанавливаем их браузеру")
+                try_login_with_cookies(browser, cookies)
+        else:
+            try_login_with_credentials(browser)
+
+        if not check_is_successful_logged_in(browser):
+            raise RuntimeError("Не удалось войти в аккаунт.")
+
+    except Exception as e:
+        logger.error(f"Ошибка при входе в Яндекс: {e}")
+        if browser.is_open:
+            browser.close_browser()
+        raise
+
+
 def try_login_with_credentials(browser: Browser):
     # Выбор поставщика учетных данных в зависимости от режима разработки
     if IS_DEV:
@@ -34,7 +59,7 @@ def try_login_with_credentials(browser: Browser):
         logger.info("Запуск браузера")
         browser.start_browser()
 
-        if login_yandex(
+        if login(
             browser,
             credentials_provider,
             credentials["login"],
@@ -67,16 +92,7 @@ def try_login_with_cookies(browser: Browser, cookies):
         logger.error(f"Не получилось войти с помощью кук: {e}")
 
 
-def add_cookies_to_browser(browser: Browser, cookies):
-    try:
-        for cookie in cookies:
-            browser.driver.add_cookie(cookie)
-        logger.info("Куки добавлены")
-    except Exception as e:
-        logger.error(f"Не удалось добавить куки: {e}")
-
-
-def login_yandex(
+def login(
     browser: Browser,
     credentials_provider: CredentialsProvider,
     username: str,
@@ -326,3 +342,22 @@ def check_is_successful_logged_in(browser: Browser):
     except Exception as e:
         logger.error(f"Ошибка при проверке на вход: {e}")
         return False
+
+
+def add_cookies_to_browser(browser: Browser, cookies):
+    try:
+        for cookie in cookies:
+            browser.driver.add_cookie(cookie)
+        logger.info("Куки добавлены")
+    except Exception as e:
+        logger.error(f"Не удалось добавить куки: {e}")
+
+
+def load_cookies():
+    try:
+        with open(TEST_ACCOUNT_COOKIE_FILE_NAME, "rb") as file:
+            cookies = pickle.load(file)
+            return cookies
+    except (FileNotFoundError, pickle.UnpicklingError) as e:
+        logger.warning(f"Ошибка при загрузке куки: {e}")
+        return None
