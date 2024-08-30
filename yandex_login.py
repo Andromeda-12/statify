@@ -48,6 +48,34 @@ def try_login_with_credentials(browser: Browser):
             logger.info("Не удалось войти, пробуем снова...")
 
 
+def try_login_with_cookies(browser: Browser, cookies):
+    browser.start_browser()
+    browser.driver.get("https://id.yandex.ru/")
+    time.sleep(1)
+    add_cookies_to_browser(browser, cookies)
+    time.sleep(1)
+    browser.driver.get("https://id.yandex.ru/")
+
+    try:
+        browser.wait_for_condition(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '[data-testid="profile-card-avatar"]')
+            )
+        )
+        logger.success("Успешный вход с помощью кук")
+    except Exception as e:
+        logger.error(f"Не получилось войти с помощью кук: {e}")
+
+
+def add_cookies_to_browser(browser: Browser, cookies):
+    try:
+        for cookie in cookies:
+            browser.driver.add_cookie(cookie)
+        logger.info("Куки добавлены")
+    except Exception as e:
+        logger.error(f"Не удалось добавить куки: {e}")
+
+
 def login_yandex(
     browser: Browser,
     credentials_provider: CredentialsProvider,
@@ -66,7 +94,11 @@ def login_yandex(
             login_field.send_keys(username)
             login_field.send_keys(Keys.RETURN)
             logger.info("Введен логин")
-            # После этого нужно ввести смс
+
+            if IS_DEV:
+                # Возвращаем True или False, в зависимости от того, получилось ли войти в аккаунт
+                return is_dev_account_login_by_email(browser, password)
+
             # Пытаемся получить смс
             sms_code = credentials_provider.get_sms_code(
                 activation_id=activation_id,
@@ -77,17 +109,7 @@ def login_yandex(
                 logger.info("Код активации не получен")
                 return False
 
-            # Вставляем полученный код
-            phone_code_field = browser.wait_for_condition(
-                EC.presence_of_element_located((By.ID, "passp-field-phoneCode"))
-            )
-            phone_code_field.send_keys(sms_code)
-            phone_code_field.send_keys(Keys.RETURN)
-            logger.info("Введен код активации")
-
-            if IS_DEV:
-                # Возвращаем True или False, в зависимости от того, получилось ли войти в аккаунт
-                return is_dev_account_login(browser, password)
+            handle_enter_phone_code(browser, sms_code)
 
             logger.info("Вход в аккаунт")
             return is_account_registration_and_login(browser, password)
@@ -117,7 +139,56 @@ def retry_send_sms(browser: Browser):
         logger.error(f"Не получилось отправить новое смс: {e}")
 
 
-def is_dev_account_login(browser: Browser, password: str):
+def is_dev_account_login_by_email(browser: Browser, password: str):
+    """
+    Получилось ли войти в тестовый аккаунт
+
+    :return: True, если получилось войти, иначе False
+    """
+    try:
+        logger.info("Логика входа в тестовый аккаунт")
+        password_field = browser.wait_for_condition(
+            EC.presence_of_element_located((By.ID, "passp-field-passwd"))
+        )
+        password_field.send_keys(password)
+        password_field.send_keys(Keys.RETURN)
+        logger.info("Введен пароль")
+        logger.info("Введите код активации, полученный на телефон в пуш уведомлении: ")
+        code = input("Код активации: ").strip()
+
+        if not code:
+            logger.info("Код активации не был введен")
+            return False
+
+        handle_enter_phone_code(browser, code)
+
+        return check_is_logged_in(browser)
+
+    except Exception as e:
+        logger.error(f"Ошибка при попытке войти в тестовый аккаунт: {e}")
+        return False
+
+
+def check_is_logged_in(browser: Browser):
+    try:
+        browser.wait_for_condition(EC.url_to_be("https://id.yandex.ru/"))
+        logger.success("Вход в аккаунт успешно выполнен")
+
+        if IS_DEV:
+            pickle.dump(
+                browser.driver.get_cookies(), open(TEST_ACCOUNT_COOKIE_FILE_NAME, "wb")
+            )
+            logger.info(f"Куки записаны в файл {TEST_ACCOUNT_COOKIE_FILE_NAME}")
+
+        return True
+    except Exception as e:
+        logger.error(
+            f"Ошибка при ожидании перехода на страницу https://id.yandex.ru/: {e}"
+        )
+        return False
+
+
+def is_dev_account_login_by_phone(browser: Browser, password: str):
     """
     Получилось ли войти в тестовый аккаунт
 
@@ -140,19 +211,7 @@ def is_dev_account_login(browser: Browser, password: str):
 
         handle_button_not_now()
 
-        try:
-            browser.wait_for_condition(EC.url_to_be("https://id.yandex.ru/"))
-            logger.success("Вход в аккаунт успешно выполнен")
-            pickle.dump(
-                browser.driver.get_cookies(), open(TEST_ACCOUNT_COOKIE_FILE_NAME, "wb")
-            )
-            logger.info(f"Куки записаны в файл {TEST_ACCOUNT_COOKIE_FILE_NAME}")
-            return True
-        except Exception as e:
-            logger.error(
-                f"Ошибка при ожидании перехода на страницу https://id.yandex.ru/: {e}"
-            )
-            return False
+        return check_is_logged_in(browser)
 
     except Exception as e:
         logger.error(f"Ошибка при попытке войти в тестовый аккаунт: {e}")
@@ -188,19 +247,24 @@ def is_account_registration_and_login(browser: Browser, password: str):
         # Не сейчас
         handle_button_not_now(browser)
 
-        try:
-            browser.wait_for_condition(EC.url_to_be("https://id.yandex.ru/"))
-            logger.success("Вход в аккаунт успешно выполнен")
-            return True
-        except Exception as e:
-            logger.error(
-                f"Ошибка при ожидании перехода на страницу https://id.yandex.ru/: {e}"
-            )
-            return False
+        return check_is_logged_in(browser)
 
     except Exception as e:
         logger.error(f"Ошибка при попытке войти в аккаунт: {e}")
         return False
+
+
+def handle_enter_phone_code(browser: Browser, code):
+    try:
+        # Вставляем полученный код
+        phone_code_field = browser.wait_for_condition(
+            EC.presence_of_element_located((By.ID, "passp-field-phoneCode"))
+        )
+        phone_code_field.send_keys(code)
+        phone_code_field.send_keys(Keys.RETURN)
+        logger.info("Введен код активации")
+    except:
+        logger.error(f"Поле для ввода кода не появилось")
 
 
 def handle_create_account_button(browser: Browser):
@@ -247,3 +311,18 @@ def handle_button_not_now(browser: Browser):
         logger.info(f'Нажата кнопка "Не сейчас"')
     except:
         logger.error(f'Кнопка "Не сейчас" не появилась')
+
+
+def check_is_successful_logged_in(browser: Browser):
+    try:
+        browser.driver.get("https://yandex.ru/maps")
+        browser.wait_for_condition(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, ".user-menu-control__icon._auth")
+            )
+        )
+        logger.success("Вход был выполнен успешно")
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка при проверке на вход: {e}")
+        return False
