@@ -1,8 +1,8 @@
 establishments_data = [
     {
         "name": "Мята Lounge",
-        "niche": "Кальян-бар",
-        "coordinates": {"latitude": "52.680707", "longitude": "37.715830"},
+        "niche": "Калья1н-бар",
+        "coordinates": {"latitude": "55.680707", "longitude": "37.715830"},
         "address": "ул. Гурьянова, 30, Москва, этаж 2",
         "repeats": 1,
     },
