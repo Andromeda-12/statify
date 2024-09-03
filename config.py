@@ -20,9 +20,6 @@ IS_DEV = args.dev
 # Путь к драйверу
 EDGE_DRIVER_PATH = os.getenv("EDGE_DRIVER_PATH")
 
-START_URL = os.getenv("START_URL")
-SECOND_URL = os.getenv("SECOND_URL")
-
 # Информация для Telegram-бота
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
@@ -30,7 +27,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 # API-ключ для 365sms
 API_365SMS_KEY = os.getenv("API_365SMS_KEY")
 
-# Пароль для нового аккаунта
+# Данные для нового аккаунта
 ACCOUNT_PASSWORD = os.getenv("ACCOUNT_PASSWORD")
 ACCOUNT_FIRSTNAME = "Иван"
 ACCOUNT_LASTNAME = "Иванов"
@@ -44,6 +41,9 @@ TEST_ACCOUNT_COOKIE_FILE_NAME = "test_account_cookie"
 APPLICATION_RUN_TIME = os.getenv("APPLICATION_RUN_TIME")
 SEND_STATUS_NOTIFICATION_TIME = os.getenv("SEND_STATUS_NOTIFICATION_TIME")
 
+# Время, которое браузер ждет выполнения условия (поиск элементов)
+BROWSER_CONDITION_WAIT_TIME = 30
+
 # Количество попыток, сколько раз пытаемся обработать заведение в случае ошибки
 MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS = 3
 
@@ -51,3 +51,8 @@ MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS = 3
 MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS = 1
 # Количество попыток для получения целевого заведения в списке заведений
 MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS = 1
+
+# Количество заведений, которое будет просмотрено перед целевым заведением
+MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET = 0
+# Количество, сколько раз нужно посмотреть отзывы
+MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS = 1
