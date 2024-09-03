@@ -5,9 +5,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.common.exceptions import TimeoutException
-from config import EDGE_DRIVER_PATH
-
-CONDITION_WAIT_TIME = 60
+from config import BROWSER_CONDITION_WAIT_TIME, EDGE_DRIVER_PATH
 
 
 class Browser:
@@ -18,7 +16,7 @@ class Browser:
         self._configure_options()
 
     def _configure_options(self):
-        """Настройка опций для браузера."""
+        """Настройка опций для браузера"""
         # Игнорирование предупреждений сертификатов
         self.options.add_argument("--ignore-certificate-errors")
         # Запуск браузера на весь экран
@@ -29,7 +27,7 @@ class Browser:
         self.options.add_argument("--disable-blink-features=AutomationControlled")
 
     def start_browser(self):
-        """Запуск браузера."""
+        """Запуск браузера"""
         try:
             service = Service(EDGE_DRIVER_PATH)
             self.driver = webdriver.Edge(service=service, options=self.options)
@@ -40,7 +38,7 @@ class Browser:
             self.driver = None
 
     def close_browser(self):
-        """Закрытие браузера."""
+        """Закрытие браузера"""
         if self.driver:
             try:
                 self.driver.quit()
@@ -49,9 +47,11 @@ class Browser:
             except Exception as e:
                 logger.error(f"Ошибка при закрытии браузера: {e}")
         else:
-            logger.warning("Браузер не был запущен или уже закрыт.")
+            logger.warning("Браузер не был запущен или уже закрыт")
 
-    def wait_for_condition(self, func) -> WebElement:
+    def wait_for_condition(
+        self, func, wait_time=BROWSER_CONDITION_WAIT_TIME
+    ) -> WebElement:
         """
         Ожидание выполнения условия
 
@@ -60,9 +60,13 @@ class Browser:
         :raises TimeoutException: Если условие не выполнено
         """
         try:
-            return WebDriverWait(self.driver, CONDITION_WAIT_TIME).until(func)
+            return WebDriverWait(self.driver, wait_time).until(func)
         except TimeoutException:
-            logger.error(
-                f"Условие не было выполнено в течение {CONDITION_WAIT_TIME} секунд."
-            )
+            logger.error(f"Условие не было выполнено в течение {wait_time} секунд")
             raise
+
+    def scroll_to(self, element: WebElement):
+        """
+        Прокрутка до элемента
+        """
+        self.driver.execute_script("arguments[0].scrollIntoViewIfNeeded();", element)
