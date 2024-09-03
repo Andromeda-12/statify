@@ -2,15 +2,12 @@ import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import (
     NoSuchElementException,
     TimeoutException,
     WebDriverException,
 )
-from selenium.webdriver.common.actions.wheel_input import ScrollOrigin
 from loguru import logger
-
 from browser import Browser
 from config import (
     MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS,
@@ -128,45 +125,12 @@ def close_tooltip_popup_by_title(browser):
 def scroll_through_establishments(browser: Browser):
     """Прокручивает контейнер с заведениями на странице, чтобы загрузились все заведения"""
     try:
-        scroll_origin = ScrollOrigin.from_viewport(100, 200)
         scroll_container = WebDriverWait(browser.driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, "scroll__container"))
         )
         previous_height = browser.driver.execute_script(
             "return arguments[0].scrollHeight", scroll_container
         )
-
-        # for _ in range(3):  # Три полных прокрутки списка
-        #     scroll_height = browser.driver.execute_script(
-        #         "return arguments[0].scrollHeight", scroll_container
-        #     )
-
-        #     while True:
-        #         ActionChains(browser.driver).scroll_from_origin(
-        #             scroll_origin, 0, 5000
-        #         ).perform()
-
-        #         time.sleep(1)
-
-        #         new_scroll_height = browser.driver.execute_script(
-        #             "return arguments[0].scrollHeight", scroll_container
-        #         )
-        #         self.browser.execute_script(
-        #             "arguments[0].scrollIntoView(true);", establishment
-        #         )
-
-        #         # Если высота не изменилась, значит долистали до конца списка
-        #         if new_scroll_height == scroll_height:
-        #             break
-
-        #         scroll_height = new_scroll_height
-
-        #     # Возвращение к началу списка
-        #     browser.driver.execute_script(
-        #         "arguments[0].scrollTop = 0;", scroll_container
-        #     )
-        #     time.sleep(1)
-
         while True:
             # Прокрутите контейнер до самого низа
             browser.driver.execute_script(
@@ -182,7 +146,6 @@ def scroll_through_establishments(browser: Browser):
             if new_height == previous_height:
                 break  # Если высота не изменилась, значит достигнут конец списка
             previous_height = new_height
-        time.sleep(20)
     except WebDriverException as e:
         logger.error(f"Ошибка при прокрутке списка заведений: {e}")
         raise
@@ -194,9 +157,7 @@ def find_establishments(browser: Browser):
         establishments = WebDriverWait(browser.driver, 10).until(
             EC.presence_of_all_elements_located((By.CLASS_NAME, "search-snippet-view"))
         )
-
         logger.info(f"Найдено {len(establishments)} заведений")
-
         return establishments
     except TimeoutException:
         logger.warning("Не удалось найти заведения на странице")

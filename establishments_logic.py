@@ -5,7 +5,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from browser import Browser
 from config import MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS
-from establishment_browser import get_establishments, get_target_establishment_index
+from establishments_scraping import get_establishments, get_target_establishment_index
 
 
 def get_max_repeats(establishments_data: list):
