@@ -18,8 +18,8 @@ from helpers import declension
 
 def get_establishments(browser: Browser):
     """Функция для поиска и взаимодействия с заведениями"""
-    retries = 1
-    while retries <= MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS:
+    retries = 0
+    while retries < MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS:
         retries += 1
         logger.info(
             f"Попытка {retries}/{MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS} получения списка заведений"
@@ -144,6 +144,9 @@ def scroll_through_establishments(browser: Browser):
             )
             # Проверьте, изменилась ли высота
             if new_height == previous_height:
+                browser.driver.execute_script(
+                    "arguments[0].scrollTop = 0;", scroll_container
+                )
                 break  # Если высота не изменилась, значит достигнут конец списка
             previous_height = new_height
     except WebDriverException as e:
