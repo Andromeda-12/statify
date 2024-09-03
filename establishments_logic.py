@@ -4,13 +4,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from browser import Browser
-from config import MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS
+from config import (
+    MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET,
+    MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS,
+)
+from establishment_interaction import (
+    interact_with_establishment,
+    interact_with_target_establishment,
+)
 from establishments_scraping import get_establishments, get_target_establishment_index
-
-
-def get_max_repeats(establishments_data: list):
-    """Получить максимальное значение repeat из данных заведений"""
-    return max(establishment["repeats"] for establishment in establishments_data)
 
 
 def process_establishment_logic(
@@ -22,21 +24,21 @@ def process_establishment_logic(
     total_repeats: int,
 ):
     """Выполнить логику для одного заведения"""
-    establishment_name = establishment["name"]
-    establishment_niche = establishment["niche"]
-    establishment_coordinates = establishment["coordinates"]
-    establishment_address = establishment["address"]
+    target_establishment_name = establishment["name"]
+    target_establishment_niche = establishment["niche"]
+    target_establishment_coordinates = establishment["coordinates"]
+    target_establishment_address = establishment["address"]
 
     logger.info(
-        f"Обработка заведения {establishment_name} ({establishment_niche}) с координатами {establishment_coordinates}"
+        f"Обработка заведения {target_establishment_name} ({target_establishment_niche}) с координатами {target_establishment_coordinates}"
     )
     logger.info(
         f"повтор: {repeat_number + 1}/{total_repeats}, попытка: {attempt_number + 1}/{max_attempts}"
     )
 
     try:
-        input_coordinates(browser, establishment_coordinates)
-        input_niche_and_search(browser, establishment_niche)
+        input_coordinates(browser, target_establishment_coordinates)
+        input_niche_and_search(browser, target_establishment_niche)
 
         establishments = get_establishments(browser)
 
@@ -44,13 +46,48 @@ def process_establishment_logic(
             raise Exception("Список заведений пуст")
 
         target_index = get_target_establishment_index(
-            browser, establishments, establishment_name, establishment_address
+            browser,
+            establishments,
+            target_establishment_name,
+            target_establishment_address,
         )
 
         if target_index == -1:
             raise Exception("Не удалось найти целевое заведение в списке заведений")
 
-        # TODO: Логика для заведения
+        interactions_count = 0
+        for establishment_index, establishment in enumerate(establishments):
+            if establishment_index == target_index:
+                continue  # Пропускаем целевое заведение
+
+            if interactions_count >= MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET:
+                break  # Прерываем цикл, если достигнуто максимальное количество взаимодействий с заведениями
+
+            try:
+                logger.info(
+                    f"Взаимодействие с заведением для сравнения {establishment_index}/{MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET}"
+                )
+                interact_with_establishment(browser, establishment)
+                interactions_count += 1
+            except Exception as e:
+                # Не увеличиваем interactions_count, чтобы попробовать посмотреть другое заведение
+                logger.error(
+                    f"Ошибка при взаимодействии с заведением на индексе {establishment_index}: {e}"
+                )
+
+        logger.success("Заведения просмотрены")
+
+        target_establishment = establishments[target_index]
+
+        logger.info("____________________________________________")
+        logger.info("Взаимодействие c целевым заведение")
+
+        interact_with_target_establishment(browser, target_establishment)
+
+        logger.success(
+            f"Выполнено целевое действие для заведения '{target_establishment_name}'"
+        )
+        logger.info("____________________________________________")
     except:
         raise
 
@@ -126,6 +163,11 @@ def process_establishments(
         logger.warning(
             f"Заведения обработаны на повторении {repetition_number + 1}. Не удалось обработать следующие заведения: {', '.join(unprocessed)}"
         )
+
+
+def get_max_repeats(establishments_data: list):
+    """Получить максимальное значение repeat из данных заведений"""
+    return max(establishment["repeats"] for establishment in establishments_data)
 
 
 def should_continue_processing(
