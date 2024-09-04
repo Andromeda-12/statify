@@ -46,41 +46,26 @@ def get_establishments(browser: Browser):
 
 
 def get_target_establishment_index(
-    browser: Browser,
     establishments: list,
     establishment_name: str,
     establishment_address: str,
 ):
     """Функция для поиска целевого заведения"""
-    retries = 0
-    while retries < MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS:
-        retries += 1
-
-        logger.info(
-            f"Попытка {retries}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} получения целевого заведения"
-        )
-
-        target_establishment_index = find_target_establishment(
-            establishments, establishment_name, establishment_address
-        )
-
-        if target_establishment_index == -1:
+    for index, establishment in enumerate(establishments):
+        try:
+            name = establishment.find_element(
+                By.CSS_SELECTOR, ".search-business-snippet-view__title"
+            ).text
+            address = establishment.find_element(
+                By.CSS_SELECTOR, ".search-business-snippet-view__address"
+            ).text
+            if name == establishment_name and address == establishment_address:
+                return index
+        except Exception as e:
             logger.warning(
-                "Целевое заведение не найдено. Перезагружаем страницу и пробуем снова"
+                f"Не удалось получить целевое заведение на индексе {index}, {e}"
             )
-            browser.driver.refresh()
-            time.sleep(5)
-            continue
-
-        logger.success(
-            f"Целевое заведение найдено по индексу {target_establishment_index}"
-        )
-
-        return target_establishment_index
-
-    logger.critical(
-        f"Не удалось получить целевое заведение '{establishment_name}' после {MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} {declension(MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS, 'попытка', 'попытки', 'попыток')}"
-    )
+    logger.warning(f"Заведение с именем '{establishment_name}' не найдено")
     return -1
 
 
@@ -169,26 +154,3 @@ def find_establishments(browser: Browser):
     except TimeoutException:
         logger.warning("Не удалось найти заведения на странице")
         return []
-
-
-def find_target_establishment(
-    establishments, establishment_name, establishment_address
-):
-    """Находит целевое заведение по имени среди списка заведений"""
-    for index, establishment in enumerate(establishments):
-        try:
-            name = establishment.find_element(
-                By.CSS_SELECTOR, ".search-business-snippet-view__title"
-            ).text
-            address = establishment.find_element(
-                By.CSS_SELECTOR, ".search-business-snippet-view__address"
-            ).text
-            if name == establishment_name and address == establishment_address:
-                logger.success(f"Целевое заведение '{establishment_name}' найдено")
-                return index
-        except Exception as e:
-            logger.warning(
-                f"Не удалось получить целевое заведение на индексе {index}, {e}"
-            )
-    logger.warning(f"Заведение с именем '{establishment_name}' не найдено")
-    return -1

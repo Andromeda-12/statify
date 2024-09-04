@@ -6,6 +6,7 @@ from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from browser import Browser
 from config import (
     MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET,
+    MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS,
     MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS,
 )
 from establishment_interaction import (
@@ -28,40 +29,77 @@ def process_establishment_logic(
     target_establishment_niche = establishment["niche"]
     target_establishment_coordinates = establishment["coordinates"]
     target_establishment_address = establishment["address"]
-
+    
+    latitude = target_establishment_coordinates.get("latitude")
+    longitude = target_establishment_coordinates.get("longitude")
+    coordinates_string = f"{latitude}, {longitude}"
     logger.info(
-        f"Обработка заведения {target_establishment_name} ({target_establishment_niche}) с координатами {target_establishment_coordinates}"
+        f"Обработка заведения {target_establishment_name} ({target_establishment_niche}) с координатами {coordinates_string}"
     )
     logger.info(
         f"повтор: {repeat_number + 1}/{total_repeats}, попытка: {attempt_number + 1}/{max_attempts}"
     )
 
+    get_target_establishment_attempt = 0
+    target_establishment_index = -1
+    establishments = []
+
+    while get_target_establishment_attempt < MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS:
+        try:
+            input_coordinates(browser, target_establishment_coordinates)
+            input_niche_and_search(browser, target_establishment_niche)
+            establishments = get_establishments(browser)
+
+            if not establishments:
+                raise Exception("Список заведений пуст")
+
+            target_establishment_index = get_target_establishment_index(
+                establishments,
+                target_establishment_name,
+                target_establishment_address,
+            )
+
+            if target_establishment_index == -1:
+                logger.warning(
+                    f"Целевое заведение '{target_establishment_name}' не найдено. Перезагружаем страницу и пробуем снова"
+                )
+                get_target_establishment_attempt += 1
+                browser.driver.refresh()
+                time.sleep(5)
+                continue
+
+            logger.success(
+                f"Целевое заведение '{target_establishment_name}' найдено на индексе {target_establishment_index}"
+            )
+            break
+        except Exception as e:
+            get_target_establishment_attempt += 1
+
+            if (
+                get_target_establishment_attempt
+                >= MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS
+            ):
+                logger.critical(
+                    f"Не удалось получить целевое заведение '{target_establishment_name}' после {MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} попыток"
+                )
+                raise Exception(f"Не удалось получить целевое заведение: {e}")
+
+            logger.warning(
+                f"Ошибка при попытке найти целевое заведение, перезагружаем страницу и пробуем снова. Ошибка: {e} "
+            )
+            browser.driver.refresh()
+            time.sleep(5)
+
     try:
-        input_coordinates(browser, target_establishment_coordinates)
-        input_niche_and_search(browser, target_establishment_niche)
-
-        establishments = get_establishments(browser)
-
-        if not establishments:
-            raise Exception("Список заведений пуст")
-
-        target_index = get_target_establishment_index(
-            browser,
-            establishments,
-            target_establishment_name,
-            target_establishment_address,
-        )
-
-        if target_index == -1:
-            raise Exception("Не удалось найти целевое заведение в списке заведений")
-
+        # Взаимодействие с несколькими заведениями до целевого заведения
         interactions_count = 0
         for establishment_index, establishment in enumerate(establishments):
-            if establishment_index == target_index:
-                continue  # Пропускаем целевое заведение
-
+            # Прерываем цикл, если достигнуто максимальное количество взаимодействий
             if interactions_count >= MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET:
-                break  # Прерываем цикл, если достигнуто максимальное количество взаимодействий с заведениями
+                break
+            # Пропускаем целевое заведение
+            if establishment_index == target_establishment_index:
+                continue
 
             try:
                 logger.info(
@@ -70,29 +108,25 @@ def process_establishment_logic(
                 interact_with_establishment(browser, establishment)
                 interactions_count += 1
             except Exception as e:
-                # Не увеличиваем interactions_count, чтобы попробовать посмотреть другое заведение
                 logger.error(
                     f"Ошибка при взаимодействии с заведением на индексе {establishment_index}: {e}"
                 )
 
-        logger.success("Заведения просмотрены")
+        logger.success("Заведения перед целевым заведением просмотрены")
 
-        target_establishment = establishments[target_index]
+        target_establishment = establishments[target_establishment_index]
 
-        logger.info(
-            "_______________________________________________________"
-        )
-        logger.info("Взаимодействие c целевым заведение")
+        logger.info("_______________________________________________________")
+        logger.info("Взаимодействие с целевым заведением")
 
         interact_with_target_establishment(browser, target_establishment)
 
         logger.success(
             f"Выполнено целевое действие для заведения '{target_establishment_name}'"
         )
-        logger.info(
-            "_______________________________________________________"
-        )
-    except:
+        logger.info("_______________________________________________________")
+    except Exception as e:
+        logger.error(f"Ошибка при обработке заведения: {e}")
         raise
 
 
@@ -153,8 +187,8 @@ def process_establishments(
                     )
                     attempts[name] += 1
                     if attempts[name] >= MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS:
-                        latitude = establishment['coordinates'].get("latitude")
-                        longitude = establishment['coordinates'].get("longitude")
+                        latitude = establishment["coordinates"].get("latitude")
+                        longitude = establishment["coordinates"].get("longitude")
                         coordinates_string = f"{latitude}, {longitude}"
                         logger.critical(
                             f"""Не удалось обработать заведение {establishment['name']} после {MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS} попыток.
