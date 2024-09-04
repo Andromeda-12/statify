@@ -40,7 +40,7 @@ def get_establishments(browser: Browser):
         return establishments
 
     logger.critical(
-        f"Не удалось получить список заведений после {MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS} {declension(MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS, 'попытка', 'попытки', 'попыток')}"
+        f"Не удалось получить список заведений после {MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS} {declension(MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS, 'попытки', 'попыток', 'попыток')}"
     )
     return
 
