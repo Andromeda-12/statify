@@ -150,8 +150,8 @@ def browse_establishment_reviews(browser: Browser):
 def perform_target_action(browser: Browser):
     logger.info("Выполняем целевое действие")
     actions = [
-        (click_telegram_link, "Переход на Telegram выполнен"),
         (click_whatsapp_link, "Переход на WhatsApp выполнен"),
+        (click_telegram_link, "Переход на Telegram выполнен"),
         (click_website_link, "Переход на сайт выполнен"),
     ]
     for action, success_message in actions:
@@ -194,7 +194,8 @@ def click_whatsapp_link(browser: Browser):
         button = browser.wait_for_condition(
             EC.element_to_be_clickable(
                 (By.CSS_SELECTOR, '[aria-label="Соцсети, whatsapp"]')
-            )
+            ),
+            5,
         )
         browser.driver.execute_script("arguments[0].click();", button)
         return True
@@ -208,7 +209,8 @@ def click_website_link(browser: Browser):
         button = browser.wait_for_condition(
             EC.element_to_be_clickable(
                 (By.CSS_SELECTOR, ".action-button-view._type_web")
-            )
+            ),
+            5,
         )
         browser.driver.execute_script("arguments[0].click();", button)
         return True
