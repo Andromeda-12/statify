@@ -22,16 +22,11 @@ def login_to_yandex_account(browser: Browser):
     """Выполнить вход в аккаунт Яндекс."""
     try:
         if IS_DEV:
-            logger.info("Получение кук для тестового аккаунта")
-            cookies = load_cookies()
-            if cookies is None:
-                logger.info("Куков нет, попытка залогиниться в яндекс")
-                try_login_with_credentials(browser)
-            else:
-                logger.info("Куки есть, устанавливаем их браузеру")
-                try_login_with_cookies(browser, cookies)
-        else:
-            try_login_with_credentials(browser)
+            browser.start_browser()
+            browser.driver.get("https://yandex.ru/maps")
+            return
+        
+        try_login_with_credentials(browser)
 
         if not check_is_successful_logged_in(browser):
             raise RuntimeError("Не удалось войти в аккаунт.")
