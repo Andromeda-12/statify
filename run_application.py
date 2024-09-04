@@ -21,6 +21,7 @@ def run_application():
         for repetition_number in range(0, max_repeats):
             # Запуск браузера и вход в аккаунт
             login_to_yandex_account(browser)
+            # Обработка заведения
             process_establishments(
                 browser, establishments_data, repetition_number, final_status
             )
@@ -31,7 +32,7 @@ def run_application():
 
             if final_status[name] == repeats_required:
                 logger.success(
-                    f"Заведение '{name}' успешно обработано {repeats_required} {declension(repeats_required, 'раз', 'раза', 'раз')}"
+                    f"Заведение '{name}' успешно обработано {final_status[name]}/{repeats_required} {declension(final_status[name], 'раз', 'раза', 'раз')}"
                 )
             else:
                 logger.critical(

@@ -51,7 +51,7 @@ def get_target_establishment_index(
     establishment_name: str,
     establishment_address: str,
 ):
-    """Функция для поиска и целевого заведения"""
+    """Функция для поиска целевого заведения"""
     retries = 0
     while retries < MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS:
         retries += 1
@@ -71,6 +71,10 @@ def get_target_establishment_index(
             browser.driver.refresh()
             time.sleep(5)
             continue
+
+        logger.success(
+            f"Целевое заведение найдено по индексу {target_establishment_index}"
+        )
 
         return target_establishment_index
 
@@ -183,6 +187,8 @@ def find_target_establishment(
                 logger.success(f"Целевое заведение '{establishment_name}' найдено")
                 return index
         except Exception as e:
-            logger.warning(f"Не удалось получить целевое заведение")
+            logger.warning(
+                f"Не удалось получить целевое заведение на индексе {index}, {e}"
+            )
     logger.warning(f"Заведение с именем '{establishment_name}' не найдено")
     return -1

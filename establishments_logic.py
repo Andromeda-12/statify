@@ -42,7 +42,7 @@ def process_establishment_logic(
 
         establishments = get_establishments(browser)
 
-        if not establishment:
+        if not establishments:
             raise Exception("Список заведений пуст")
 
         target_index = get_target_establishment_index(
@@ -79,7 +79,9 @@ def process_establishment_logic(
 
         target_establishment = establishments[target_index]
 
-        logger.info("____________________________________________")
+        logger.info(
+            "_______________________________________________________"
+        )
         logger.info("Взаимодействие c целевым заведение")
 
         interact_with_target_establishment(browser, target_establishment)
@@ -87,7 +89,9 @@ def process_establishment_logic(
         logger.success(
             f"Выполнено целевое действие для заведения '{target_establishment_name}'"
         )
-        logger.info("____________________________________________")
+        logger.info(
+            "_______________________________________________________"
+        )
     except:
         raise
 
@@ -139,6 +143,9 @@ def process_establishments(
                     logger.success(
                         f"Заведение {establishment['name']} успешно обработано"
                     )
+                    logger.info(
+                        "________________________________________________________________________________________________________"
+                    )
 
                 except Exception as e:
                     logger.error(
@@ -146,10 +153,16 @@ def process_establishments(
                     )
                     attempts[name] += 1
                     if attempts[name] >= MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS:
+                        latitude = establishment['coordinates'].get("latitude")
+                        longitude = establishment['coordinates'].get("longitude")
+                        coordinates_string = f"{latitude}, {longitude}"
                         logger.critical(
                             f"""Не удалось обработать заведение {establishment['name']} после {MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS} попыток.
-                            Ниша {establishment["niche"]}. "
-                            Координаты {establishment['coordinates']}"""
+                            Ниша: '{establishment["niche"]}'. "
+                            Координаты: {coordinates_string}"""
+                        )
+                        logger.info(
+                            "________________________________________________________________________________________________________"
                         )
 
     if all(establishment_status.values()):
