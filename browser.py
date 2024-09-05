@@ -62,7 +62,7 @@ class Browser:
         try:
             return WebDriverWait(self.driver, wait_time).until(func)
         except TimeoutException:
-            logger.error(f"Условие не было выполнено в течение {wait_time} секунд")
+            logger.warning(f"Условие не было выполнено в течение {wait_time} секунд")
             raise
 
     def scroll_to(self, element: WebElement):

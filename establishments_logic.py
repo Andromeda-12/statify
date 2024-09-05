@@ -79,7 +79,7 @@ def process_establishment_logic(
                 get_target_establishment_attempt
                 >= MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS
             ):
-                logger.critical(
+                logger.error(
                     f"Не удалось получить целевое заведение '{target_establishment_name}' после {MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} попыток"
                 )
                 raise Exception(f"Не удалось получить целевое заведение: {e}")
@@ -103,7 +103,7 @@ def process_establishment_logic(
 
             try:
                 logger.info(
-                    f"Взаимодействие с заведением для сравнения {establishment_index}/{MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET}"
+                    f"Взаимодействие с заведением для сравнения {interactions_count + 1}/{MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET}"
                 )
                 interact_with_establishment(browser, establishment)
                 interactions_count += 1

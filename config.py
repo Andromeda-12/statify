@@ -45,14 +45,14 @@ SEND_STATUS_NOTIFICATION_TIME = os.getenv("SEND_STATUS_NOTIFICATION_TIME")
 BROWSER_CONDITION_WAIT_TIME = 30
 
 # Количество попыток, сколько раз пытаемся обработать заведение в случае ошибки
-MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS = 3
+MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS = 5
 
 # Количество попыток для получения списков заведения
-MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS = 1
+MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS = 2
 # Количество попыток для получения целевого заведения в списке заведений
-MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS = 1
+MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS = 2
 
 # Количество заведений, которое будет просмотрено перед целевым заведением
-MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET = 0
+MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET = 5
 # Количество, сколько раз нужно посмотреть отзывы
-MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS = 1
+MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS = 3
