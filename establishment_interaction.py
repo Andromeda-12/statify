@@ -5,12 +5,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver import ActionChains
-from selenium.common.exceptions import TimeoutException
 from browser import Browser
 from config import MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS
 
 
 def interact_with_establishment(browser: Browser, establishment: WebElement):
+    title_element = establishment.find_element(
+        By.CLASS_NAME, "search-business-snippet-view__title"
+    )
+    title = title_element.text
+    logger.info(f"Взаимодействие с заведением '{title}'")
+
     open_establishment_card(browser, establishment)
     browse_establishment_photos(browser)
     browse_establishment_reviews_multiple_times(browser)
