@@ -147,20 +147,21 @@ def scroll_through_establishments(browser: Browser):
 def find_establishments(browser: Browser):
     """Ищет и возвращает список заведений как элементы страницы"""
     try:
-        establishments = WebDriverWait(browser.driver, 10).until(
+        elements = WebDriverWait(browser.driver, 10).until(
             EC.presence_of_all_elements_located((By.CLASS_NAME, "search-snippet-view"))
         )
 
-        # Фильтруем только заведения с классом '_type_business', исключая подборки '_type_collection'
-        business_establishments = [
-            est
-            for est in establishments
-            if "_type_business" in est.get_attribute("class")
-        ]
+        # Фильтруем только заведения с классом '_type_business', чтобы не попадались подборки
+        business_establishments = []
+        for element in elements:
+            # Находим вложенный элемент с нужным классом
+            body_div = element.find_element(By.CLASS_NAME, "search-snippet-view__body")
+            if "_type_business" in body_div.get_attribute("class"):
+                business_establishments.append(element)
 
         logger.info(f"Найдено {len(business_establishments)} заведений")
 
-        return establishments
+        return business_establishments
     except TimeoutException:
         logger.warning("Не удалось найти заведения на странице")
         return []
