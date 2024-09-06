@@ -58,7 +58,9 @@ def get_target_establishment_index(
             address = establishment.find_element(
                 By.CSS_SELECTOR, ".search-business-snippet-view__address"
             ).text
-            if name == establishment_name and is_address_match(address, establishment_address):
+            if name == establishment_name and is_address_match(
+                address, establishment_address
+            ):
                 return index
         except Exception as e:
             logger.warning(
@@ -148,7 +150,16 @@ def find_establishments(browser: Browser):
         establishments = WebDriverWait(browser.driver, 10).until(
             EC.presence_of_all_elements_located((By.CLASS_NAME, "search-snippet-view"))
         )
-        logger.info(f"Найдено {len(establishments)} заведений")
+
+        # Фильтруем только заведения с классом '_type_business', исключая подборки '_type_collection'
+        business_establishments = [
+            est
+            for est in establishments
+            if "_type_business" in est.get_attribute("class")
+        ]
+
+        logger.info(f"Найдено {len(business_establishments)} заведений")
+
         return establishments
     except TimeoutException:
         logger.warning("Не удалось найти заведения на странице")
