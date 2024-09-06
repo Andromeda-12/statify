@@ -83,13 +83,13 @@ def process_establishment_logic(
                 continue
 
             logger.success(
-                f"Целевое заведение '{target_establishment_name}' найдено на индексе {target_establishment_index + 1} на попытке {get_target_establishment_attempt}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
+                f"Целевое заведение '{target_establishment_name}' найдено на индексе {target_establishment_index + 1} на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
             )
             break
         except Exception as e:
             get_target_establishment_attempt += 1
             logger.warning(
-                f"Ошибка при попытке найти целевое заведение на попытке {get_target_establishment_attempt}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}, перезагружаем страницу и пробуем снова. Ошибка: {e}"
+                f"Ошибка при попытке найти целевое заведение на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}, перезагружаем страницу и пробуем снова. Ошибка: {e}"
             )
             browser.driver.refresh()
             time.sleep(5)
@@ -112,8 +112,12 @@ def process_establishment_logic(
                 continue
 
             try:
+                title_element = establishment.find_element(
+                    By.CLASS_NAME, "search-business-snippet-view__title"
+                )
+                title = title_element.text
                 logger.info(
-                    f"Взаимодействие с заведением для сравнения {interactions_count + 1}/{MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET}"
+                    f"Взаимодействие с заведением '{title}' для сравнения {interactions_count + 1}/{MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET}"
                 )
                 interact_with_establishment(browser, establishment)
                 interactions_count += 1

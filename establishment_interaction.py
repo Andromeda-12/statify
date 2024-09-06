@@ -10,12 +10,6 @@ from config import MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS
 
 
 def interact_with_establishment(browser: Browser, establishment: WebElement):
-    title_element = establishment.find_element(
-        By.CLASS_NAME, "search-business-snippet-view__title"
-    )
-    title = title_element.text
-    logger.info(f"Взаимодействие с заведением '{title}'")
-
     open_establishment_card(browser, establishment)
     browse_establishment_photos(browser)
     browse_establishment_reviews_multiple_times(browser)
@@ -33,6 +27,7 @@ def open_establishment_card(browser: Browser, establishment: WebElement):
     try:
         # Кликаем на заведение
         establishment.click()
+        time.sleep(3)
         # Ждем, когда откроется карточка с информацией о заведении
         browser.wait_for_condition(
             EC.presence_of_element_located((By.CLASS_NAME, "business-card-view")), 10
@@ -85,10 +80,17 @@ def browse_establishment_photos(browser: Browser):
         logger.info("Клик по фото")
         photo_element.click()
         time.sleep(3)
-        browser.driver.back()
+        close_button = browser.wait_for_condition(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, ".photos-player-view__button._type_close")
+            ),
+            10,
+        )
+        close_button.click()
+        logger.info("Фото закрыто")
         time.sleep(3)
     except Exception as e:
-        logger.warning(f"Элемент с фото не найден, возможно, фото отсутствуют: {e}")
+        logger.warning(f"Элемент с фото не найден или не получилось закрыть фото: {e}")
         raise
 
     logger.success("Фото просмотрены")
@@ -132,6 +134,7 @@ def browse_establishment_reviews(browser: Browser):
             ActionChains(browser.driver).move_to_element(order_select_element).click(
                 order_select_element
             ).perform()
+            time.sleep(3)
             # Ждем открытие попапа
             browser.wait_for_condition(
                 EC.visibility_of_element_located(
