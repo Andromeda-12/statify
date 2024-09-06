@@ -29,7 +29,7 @@ def process_establishment_logic(
     target_establishment_niche = establishment["niche"]
     target_establishment_coordinates = establishment["coordinates"]
     target_establishment_address = establishment["address"]
-    
+
     latitude = target_establishment_coordinates.get("latitude")
     longitude = target_establishment_coordinates.get("longitude")
     coordinates_string = f"{latitude}, {longitude}"
@@ -53,15 +53,29 @@ def process_establishment_logic(
             if not establishments:
                 raise Exception("Список заведений пуст")
 
+            logger.info(
+                f"Попытка {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} получения целевого заведений"
+            )
+
             target_establishment_index = get_target_establishment_index(
                 establishments,
                 target_establishment_name,
                 target_establishment_address,
             )
 
+            if (
+                target_establishment_index == -1
+                and get_target_establishment_attempt
+                == MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS
+            ):
+                logger.warning(
+                    f"Целевое заведение '{target_establishment_name}' не найдено на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
+                )
+                break
+
             if target_establishment_index == -1:
                 logger.warning(
-                    f"Целевое заведение '{target_establishment_name}' не найдено. Перезагружаем страницу и пробуем снова"
+                    f"Целевое заведение '{target_establishment_name}' не найдено на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}. Перезагружаем страницу и пробуем снова"
                 )
                 get_target_establishment_attempt += 1
                 browser.driver.refresh()
@@ -69,26 +83,22 @@ def process_establishment_logic(
                 continue
 
             logger.success(
-                f"Целевое заведение '{target_establishment_name}' найдено на индексе {target_establishment_index}"
+                f"Целевое заведение '{target_establishment_name}' найдено на индексе {target_establishment_index + 1} на попытке {get_target_establishment_attempt}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
             )
             break
         except Exception as e:
             get_target_establishment_attempt += 1
-
-            if (
-                get_target_establishment_attempt
-                >= MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS
-            ):
-                logger.error(
-                    f"Не удалось получить целевое заведение '{target_establishment_name}' после {MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} попыток"
-                )
-                raise Exception(f"Не удалось получить целевое заведение: {e}")
-
             logger.warning(
-                f"Ошибка при попытке найти целевое заведение, перезагружаем страницу и пробуем снова. Ошибка: {e} "
+                f"Ошибка при попытке найти целевое заведение на попытке {get_target_establishment_attempt}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}, перезагружаем страницу и пробуем снова. Ошибка: {e}"
             )
             browser.driver.refresh()
             time.sleep(5)
+
+    if target_establishment_index == -1:
+        logger.error(
+            f"Не удалось получить целевое заведение '{target_establishment_name}' после {MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} попыток"
+        )
+        raise Exception(f"Не удалось получить целевое заведение: {e}")
 
     try:
         # Взаимодействие с несколькими заведениями до целевого заведения

@@ -51,13 +51,13 @@ def open_establishment_overview(browser: Browser):
             10,
         )
         browser.scroll_to(overview_button)
-        time.sleep(2)
+        time.sleep(5)
         logger.info('Клик по кнопке "Обзор"')
         overview_button.click()
-        time.sleep(1)
+        time.sleep(5)
     except Exception as e:
         logger.error(f"Не удалось найти или нажать на кнопку обзор: {e}")
-        time.sleep(30)
+        time.sleep(3)
         raise
 
 
@@ -69,10 +69,10 @@ def browse_establishment_photos(browser: Browser):
             10,
         )
         browser.scroll_to(photos_button)
-        time.sleep(2)
+        time.sleep(3)
         logger.info("Клик по кнопке с фото")
         photos_button.click()
-        time.sleep(1)
+        time.sleep(3)
     except Exception as e:
         logger.error(f"Не удалось найти или нажать на кнопку фотографий: {e}")
         raise
@@ -84,9 +84,9 @@ def browse_establishment_photos(browser: Browser):
         )
         logger.info("Клик по фото")
         photo_element.click()
-        time.sleep(2)
+        time.sleep(3)
         browser.driver.back()
-        time.sleep(1)
+        time.sleep(3)
     except Exception as e:
         logger.warning(f"Элемент с фото не найден, возможно, фото отсутствуют: {e}")
         raise
@@ -105,51 +105,57 @@ def browse_establishment_reviews_multiple_times(browser: Browser):
 
 def browse_establishment_reviews(browser: Browser):
     try:
-        # Находим кнопку отзывов
-        reviews_button = browser.wait_for_condition(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, "div._name_reviews")),
-            10,
-        )
-        browser.scroll_to(reviews_button)
-        time.sleep(2)
-        logger.info("Клик по отзывам")
-        reviews_button.click()
-        time.sleep(5)
-    except Exception as e:
-        logger.error(f"Не удалось найти или нажать на кнопку отзывов: {e}")
-        raise
-
-    try:
-        # Находим селект выбора сортировки отзывов
-        order_select_element = browser.wait_for_condition(
-            EC.element_to_be_clickable((By.CLASS_NAME, "rating-ranking-view")), 10
-        )
-        logger.info("Клик по селекту сортировки отзывов")
-        # Наводимся и кликаем
-        ActionChains(browser.driver).move_to_element(order_select_element).click(
-            order_select_element
-        ).perform()
-        # Ждем открытие попапа
-        browser.wait_for_condition(
-            EC.visibility_of_element_located(
-                (By.CLASS_NAME, "rating-ranking-view__popup")
+        try:
+            # Находим кнопку отзывов
+            reviews_button = browser.wait_for_condition(
+                EC.visibility_of_element_located(
+                    (By.CSS_SELECTOR, "div._name_reviews")
+                ),
+                10,
             )
-        )
-        # Получаем все опшины селекта
-        options = browser.driver.find_elements(
-            By.CLASS_NAME, "rating-ranking-view__popup-line"
-        )
-        # Выбираем рандомный опшн
-        random_option = random.choice(options)
-        logger.info("Клик по опшину в сортировке отзывов")
-        browser.driver.execute_script("arguments[0].click();", random_option)
-        time.sleep(5)
+            browser.scroll_to(reviews_button)
+            time.sleep(5)
+            logger.info("Клик по отзывам")
+            reviews_button.click()
+            time.sleep(5)
+        except Exception as e:
+            logger.error(f"Не удалось найти или нажать на кнопку отзывов: {e}")
+            raise
 
-    except Exception as e:
-        logger.error(f"Не удалось найти или нажать на кнопку отзывов: {e}")
+        try:
+            # Находим селект выбора сортировки отзывов
+            order_select_element = browser.wait_for_condition(
+                EC.element_to_be_clickable((By.CLASS_NAME, "rating-ranking-view")), 20
+            )
+            logger.info("Клик по селекту сортировки отзывов")
+            # Наводимся и кликаем
+            ActionChains(browser.driver).move_to_element(order_select_element).click(
+                order_select_element
+            ).perform()
+            # Ждем открытие попапа
+            browser.wait_for_condition(
+                EC.visibility_of_element_located(
+                    (By.CLASS_NAME, "rating-ranking-view__popup")
+                )
+            )
+            # Получаем все опшины селекта
+            options = browser.driver.find_elements(
+                By.CLASS_NAME, "rating-ranking-view__popup-line"
+            )
+            # Выбираем рандомный опшн
+            random_option = random.choice(options)
+            logger.info("Клик по опшину в сортировке отзывов")
+            browser.driver.execute_script("arguments[0].click();", random_option)
+            time.sleep(5)
+
+        except Exception as e:
+            logger.error(f"Не удалось найти селект сортировки отзывов: {e}")
+            raise
+
+        logger.success("Отзывы просмотрены")
+    except:
+        logger.warning("Отзывы не были просмотрены")
         raise
-
-    logger.success("Отзывы просмотрены")
 
 
 def perform_target_action(browser: Browser):
