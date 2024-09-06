@@ -10,13 +10,11 @@ def run_application():
     logger.info("Старт")
     browser = Browser()
 
+    # Инициализация словаря для отслеживания количества успешных обработок
+    final_status = {establishment["name"]: 0 for establishment in establishments_data}
+
     try:
         max_repeats = get_max_repeats(establishments_data)
-
-        # Инициализация словаря для отслеживания количества успешных обработок
-        final_status = {
-            establishment["name"]: 0 for establishment in establishments_data
-        }
 
         for repetition_number in range(0, max_repeats):
             # Запуск браузера и вход в аккаунт
@@ -25,6 +23,12 @@ def run_application():
             process_establishments(
                 browser, establishments_data, repetition_number, final_status
             )
+
+    except Exception as e:
+        logger.error(f"Ошибка в процессе выполнения: {e}")
+    finally:
+        if browser.is_open:
+            browser.close_browser()
 
         for establishment in establishments_data:
             name = establishment["name"]
@@ -40,10 +44,3 @@ def run_application():
                     f"Успешные обработки: {final_status[name]}/{repeats_required}. "
                     f"Ниша: {establishment['niche']}, Координаты: {establishment['coordinates']}"
                 )
-
-        # Завершение работы
-    except Exception as e:
-        logger.error(f"Ошибка в процессе выполнения: {e}")
-    finally:
-        if browser.is_open:
-            browser.close_browser()
