@@ -4,6 +4,7 @@ from loguru import logger
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import ActionChains
 from browser import Browser
 from config import MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS
@@ -11,6 +12,7 @@ from config import MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS
 
 def interact_with_establishment(browser: Browser, establishment: WebElement):
     open_establishment_card(browser, establishment)
+    check_modal_window(browser)
     browse_establishment_photos(browser)
     browse_establishment_reviews_multiple_times(browser)
 
@@ -23,11 +25,32 @@ def interact_with_target_establishment(
     perform_target_action(browser)
 
 
+def check_modal_window(browser: Browser):
+    try:
+        browser.wait_for_condition(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".dialog._fullscreen")), 10
+        )
+        logger.info("Появилось модальное окно, пытаемся его закрыть")
+        close_button = browser.wait_for_condition(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, '.close-button[aria-label="Закрыть"]')
+            ),
+            5,  # Задаем время ожидания в секундах
+        )
+        browser.driver.execute_script("arguments[0].click();", close_button)
+        logger.info("Модальное окно закрыто")
+    except TimeoutException:
+        pass
+    except Exception as e:
+        logger.error(
+            f"Произошла ошибка при попытке найти или закрыть модальное окно: {e}"
+        )
+
+
 def open_establishment_card(browser: Browser, establishment: WebElement):
     try:
         # Кликаем на заведение
         establishment.click()
-        time.sleep(3)
         # Ждем, когда откроется карточка с информацией о заведении
         browser.wait_for_condition(
             EC.presence_of_element_located((By.CLASS_NAME, "business-card-view")), 10

@@ -22,6 +22,7 @@ def setup_logger(notifier):
         "work.log",
         format="{time}:{level}:{message}",
         rotation="9:00",
+        retention="30 days",
         compression="zip",
     )
     logger.info("Логгер настроен")
