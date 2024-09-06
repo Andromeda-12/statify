@@ -11,9 +11,8 @@ from loguru import logger
 from browser import Browser
 from config import (
     MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS,
-    MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS,
 )
-from helpers import declension
+from helpers import declension, is_address_match
 
 
 def get_establishments(browser: Browser):
@@ -59,7 +58,7 @@ def get_target_establishment_index(
             address = establishment.find_element(
                 By.CSS_SELECTOR, ".search-business-snippet-view__address"
             ).text
-            if name == establishment_name and address == establishment_address:
+            if name == establishment_name and is_address_match(address, establishment_address):
                 return index
         except Exception as e:
             logger.warning(
