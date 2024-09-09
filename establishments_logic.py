@@ -257,6 +257,7 @@ def input_coordinates(browser: Browser, coordinates: dict):
         search_input = browser.driver.find_element(
             By.XPATH, '//input[@placeholder="Поиск мест и адресов"]'
         )
+        browser.move_to_element_and_click(search_input)
         # Очищаем инпут
         search_input.send_keys(Keys.BACKSPACE * 500)
         # Вводим координаты
@@ -272,10 +273,12 @@ def input_coordinates(browser: Browser, coordinates: dict):
         logger.info(f"Координаты {coordinates_string} введены")
 
     except NoSuchElementException:
-        logger.error("Не удалось найти инпут для поиска мест и адресов")
+        logger.error(
+            f"Не удалось найти инпут для поиска мест и адресов, {browser.driver.current_url}"
+        )
         raise
     except Exception as e:
-        logger.error(f"Ошибка при вводе координат: {e}")
+        logger.error(f"Ошибка при вводе координат, {browser.driver.current_url}: {e}")
         raise
 
 
@@ -288,6 +291,7 @@ def input_niche_and_search(browser: Browser, niche: str):
         search_input = browser.driver.find_element(
             By.XPATH, '//input[@placeholder="Поиск мест и адресов"]'
         )
+        browser.move_to_element_and_click(search_input)
         # Очищаем инпут
         search_input.send_keys(Keys.BACKSPACE * 500)
         # Вводим нишу заведения

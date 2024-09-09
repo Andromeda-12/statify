@@ -1,9 +1,12 @@
+import random
+import time
 from loguru import logger
 from selenium import webdriver
 from selenium.webdriver.edge.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebElement
+from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException
 from config import BROWSER_CONDITION_WAIT_TIME, EDGE_DRIVER_PATH
 
@@ -70,3 +73,37 @@ class Browser:
         Прокрутка до элемента
         """
         self.driver.execute_script("arguments[0].scrollIntoViewIfNeeded();", element)
+
+    def move_to_element(self, element: WebElement):
+        # Прокручиваем страницу до элемента
+        self.scroll_to(element)
+        # Получаем размеры элемента
+        element_size = element.size
+        # Определяем максимальные смещения
+        max_offset_x = min(5, element_size["width"] / 2)
+        max_offset_y = min(5, element_size["height"] / 2)
+        # Генерируем случайные смещения в пределах указанных значений
+        offset_x = random.randint(-max_offset_x, max_offset_x)
+        offset_y = random.randint(-max_offset_y, max_offset_y)
+        # Выполняем перемещение
+        ActionChains(self.driver).move_to_element_with_offset(
+            element, offset_x, offset_y
+        ).perform()
+        time.sleep(0.5)
+
+    def move_to_element_and_click(self, element: WebElement):
+        # Прокручиваем страницу до элемента
+        self.scroll_to(element)
+        # Получаем размеры элемента
+        element_size = element.size
+        # Определяем максимальные смещения
+        max_offset_x = min(5, element_size["width"] / 2)
+        max_offset_y = min(5, element_size["height"] / 2)
+        # Генерируем случайные смещения в пределах указанных значений
+        offset_x = random.randint(-max_offset_x, max_offset_x)
+        offset_y = random.randint(-max_offset_y, max_offset_y)
+        # Выполняем перемещение и клик
+        ActionChains(self.driver).move_to_element_with_offset(
+            element, offset_x, offset_y
+        ).click().perform()
+        time.sleep(0.5)

@@ -1,6 +1,8 @@
+import time
 from datetime import datetime
 from loguru import logger
 from browser import Browser
+from config import IS_DEV
 from establishments_data import establishments_data
 from establishments_logic import get_max_repeats, process_establishments
 from excel_utils import create_or_update_excel_report
@@ -30,6 +32,9 @@ def run_application(notifier: Notifier):
             process_establishments(
                 browser, establishments_data, repetition_number, final_status
             )
+            if not IS_DEV:
+                # Ждем какое-то время между каждой итерацией
+                time.sleep(4800)
 
     except Exception as e:
         logger.error(f"Ошибка в процессе выполнения: {e}")
@@ -39,17 +44,20 @@ def run_application(notifier: Notifier):
 
         log_report(establishments_data, final_status)
 
-        # Обновляем данные по обработкам независимо от успешности
-        today = datetime.now().strftime("%d.%m.%Y")  # Текущая дата в формате дд.мм.гггг
-        for establishment in establishments_data:
-            name = establishment["name"]
-            establishment_dates[name][today] = final_status[name]
+        if not IS_DEV:
+            # Обновляем данные по обработкам независимо от успешности
+            today = datetime.now().strftime(
+                "%d.%m.%Y"
+            )  # Текущая дата в формате дд.мм.гггг
+            for establishment in establishments_data:
+                name = establishment["name"]
+                establishment_dates[name][today] = final_status[name]
 
-        # Создание или обновление Excel файла
-        file_name = create_or_update_excel_report(
-            establishments_data, establishment_dates
-        )
-        notifier.send_file(file_name)
+            # Создание или обновление Excel файла
+            file_name = create_or_update_excel_report(
+                establishments_data, establishment_dates
+            )
+            notifier.send_file(file_name)
 
 
 def log_report(establishments_data, final_status):
