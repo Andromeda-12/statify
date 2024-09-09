@@ -44,6 +44,62 @@ def process_establishment_logic(
     target_establishment_index = -1
     establishments = []
 
+    try:
+        input_coordinates(browser, target_establishment_coordinates)
+        input_niche_and_search(browser, target_establishment_niche)
+    except:
+        get_target_establishment_attempt += 1
+        logger.warning(
+            f"Ошибка при вводе координат или ниши на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}, перезагружаем страницу и пробуем снова. Ошибка: {e}"
+        )
+        browser.driver.refresh()
+        time.sleep(5)
+        raise Exception(
+            f"Ошибка при вводе координат или ниши на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
+        )
+
+    try:
+        # Взаимодействие с несколькими заведениями до целевого заведения
+        interactions_count = 0
+        establishment_index = 0
+
+        while interactions_count < MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET:
+            # Получаем обновленный список заведений на каждой итерации
+            establishments = get_establishments(browser)
+
+            if establishment_index >= len(establishments):
+                logger.warning(
+                    f"Недостаточно заведений для обработки, индекс итерации: {establishment_index}, получено заведений: {len(establishments)}"
+                )
+                break
+            # Получаем текущее заведение по индексу
+            establishment = establishments[establishment_index]
+
+            try:
+                establishment_title_element = establishment.find_element(
+                    By.CLASS_NAME, "search-business-snippet-view__title"
+                )
+                establishment_title = establishment_title_element.text
+                # Проверяем, если заведение является целевым, пропускаем его
+                if establishment_title == target_establishment_name:
+                    continue
+
+                logger.info(
+                    f"Взаимодействие с заведением '{title}' для сравнения {interactions_count + 1}/{MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET}"
+                )
+
+                interact_with_establishment(browser, establishment)
+                interactions_count += 1  # Засчитываем успешное взаимодействие
+            except Exception as e:
+                logger.error(
+                    f"Ошибка при взаимодействии с заведением на индексе {establishment_index}: {e}"
+                )
+            # Переходим к следующему заведению на следующей итерации
+            establishment_index += 1
+    except Exception as e:
+        logger.error(f"Произошла ошибка в цикле взаимодействия с заведениями для сравнения: {e}")
+        
+
     while get_target_establishment_attempt < MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS:
         try:
             input_coordinates(browser, target_establishment_coordinates)
@@ -51,7 +107,8 @@ def process_establishment_logic(
             establishments = get_establishments(browser)
 
             if not establishments:
-                raise Exception("Список заведений пуст")
+                logger.warning("Список заведений пуст")
+                break
 
             logger.info(
                 f"Попытка {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} получения целевого заведений"
