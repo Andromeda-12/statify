@@ -20,3 +20,14 @@ class Notifier:
 
     def send_status_notification(self):
         self.send_notification("Бот работает")
+
+    def send_file(self, file_path):
+        url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
+        files = {"document": open(file_path, "rb")}
+        payload = {"chat_id": self.chat_id}
+        try:
+            response = requests.post(url, data=payload, files=files)
+            response.raise_for_status()
+            logger.info(f"Файл '{file_path}' успешно отправлен")
+        except requests.exceptions.RequestException as err:
+            logger.error(f"Ошибка при отправлении файла: {err}")

@@ -1,3 +1,4 @@
+import functools
 import time
 import schedule
 from loguru import logger
@@ -14,10 +15,11 @@ def main():
     setup_logger(notifier)
 
     # Запуск каждый день в определенное время
-    schedule.every().day.at(APPLICATION_RUN_TIME).do(run_application)
+    scheduled_run_application = functools.partial(run_application, notifier)
+    schedule.every().day.at(APPLICATION_RUN_TIME).do(scheduled_run_application)
     logger.info("Установлен старт на {time}", time=APPLICATION_RUN_TIME)
 
-    # Отправка уведомления каждые два дня
+    # Отправка уведомления каждый день
     schedule.every().day.at(SEND_STATUS_NOTIFICATION_TIME).do(
         notifier.send_status_notification
     )
@@ -31,10 +33,10 @@ def main():
 def dev_main():
     setup_dev_logger()
     logger.info("Запуск в режиме разработки")
-    run_application()
+    notifier = Notifier()
+    run_application(notifier)
 
     # Проверка отправки уведомлений
-    # notifier = Notifier()
     # schedule.every(5).seconds.do(notifier.send_status_notification)
     # while True:
     #     schedule.run_pending()
