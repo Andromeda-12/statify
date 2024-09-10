@@ -5,7 +5,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver import ActionChains
 from browser import Browser
 from config import MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS
 
@@ -28,7 +27,7 @@ def interact_with_target_establishment(
 def check_modal_window(browser: Browser):
     try:
         browser.wait_for_condition(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".dialog._fullscreen")), 10
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".dialog._fullscreen")), 5
         )
         logger.info("Появилось модальное окно, пытаемся его закрыть")
         close_button = browser.wait_for_condition(
@@ -41,6 +40,7 @@ def check_modal_window(browser: Browser):
         browser.driver.execute_script("arguments[0].click();", close_button)
         logger.info("Модальное окно закрыто")
     except TimeoutException:
+        logger.info("Модальное окно не появилось")
         pass
     except Exception as e:
         logger.error(
@@ -92,8 +92,11 @@ def browse_establishment_photos(browser: Browser):
         logger.info("Клик по кнопке с фото")
         browser.move_to_element_and_click(photos_button)
         time.sleep(3)
+    except TimeoutException:
+        logger.warning("Не удалось найти кнопку фотографий")
+        return
     except Exception as e:
-        logger.error(f"Не удалось найти или нажать на кнопку фотографий: {e}")
+        logger.error(f"Ошибка при попытке найти кнопку фотографий: {e}")
         raise
 
     try:
@@ -115,8 +118,11 @@ def browse_establishment_photos(browser: Browser):
         close_button.click()
         logger.info("Фото закрыто")
         time.sleep(3)
+    except TimeoutException:
+        logger.warning("Элемент с фото не найден или не получилось закрыть фото")
+        return
     except Exception as e:
-        logger.warning(f"Элемент с фото не найден или не получилось закрыть фото: {e}")
+        logger.warning(f"Ошибка при попытке посмотреть или закрыть фото: {e}")
         raise
 
     logger.success("Фото просмотрены")
@@ -147,8 +153,11 @@ def browse_establishment_reviews(browser: Browser):
             logger.info("Клик по отзывам")
             reviews_button.click()
             time.sleep(5)
+        except TimeoutException:
+            logger.warning("Не удалось найти кнопку отзывов")
+            return
         except Exception as e:
-            logger.error(f"Не удалось найти или нажать на кнопку отзывов: {e}")
+            logger.error(f"Ошибка при попытке найти кнопку отзывов: {e}")
             raise
 
         try:
@@ -177,8 +186,11 @@ def browse_establishment_reviews(browser: Browser):
             browser.driver.execute_script("arguments[0].click();", random_option)
             time.sleep(5)
 
+        except TimeoutException:
+            logger.warning("Не удалось найти селект сортировки отзывов")
+            return
         except Exception as e:
-            logger.error(f"Не удалось найти селект сортировки отзывов: {e}")
+            logger.error(f"Ошибка при попытке найти селект сортировки отзывов: {e}")
             raise
 
         logger.success("Отзывы просмотрены")
@@ -200,6 +212,7 @@ def perform_target_action(browser: Browser):
             return_to_yandex_map_after_target_action(browser)
             return
     logger.critical("Не удалось перейти ни по одной ссылке")
+    raise Exception("Не удалось перейти ни по одной ссылке")
 
 
 def return_to_yandex_map_after_target_action(browser: Browser):

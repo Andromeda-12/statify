@@ -17,7 +17,7 @@ def main():
     # Запуск каждый день в определенное время
     scheduled_run_application = functools.partial(run_application, notifier)
     schedule.every().day.at(APPLICATION_RUN_TIME).do(scheduled_run_application)
-    logger.info("Установлен старт на {time}", time=APPLICATION_RUN_TIME)
+    logger.info(f"Установлен старт на {APPLICATION_RUN_TIME}")
 
     # Отправка уведомления каждый день
     schedule.every().day.at(SEND_STATUS_NOTIFICATION_TIME).do(

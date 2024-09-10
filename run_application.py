@@ -2,11 +2,10 @@ import time
 from datetime import datetime
 from loguru import logger
 from browser import Browser
-from config import IS_DEV
+from config import APPLICATION_RUN_TIME, IS_DEV
 from establishments_data import establishments_data
 from establishments_logic import get_max_repeats, process_establishments
 from excel_utils import create_or_update_excel_report
-from helpers import declension
 from notifier import Notifier
 from yandex_login import login_to_yandex_account
 
@@ -69,6 +68,8 @@ def run_application(notifier: Notifier):
                 establishments_data, establishment_dates
             )
             notifier.send_file(file_name)
+
+        logger.info(f"Следующий старт в {APPLICATION_RUN_TIME}")
 
 
 def log_report(establishments_data, final_status):
