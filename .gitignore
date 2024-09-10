@@ -4,6 +4,7 @@ __pycache__
 msedgedriver.exe
 .env
 *.log
+*.zip
 test_account_cookie
 Отчет*
 test.py
