@@ -30,9 +30,12 @@ def run_application(notifier: Notifier):
             process_establishments(
                 browser, establishments_data, repetition_number, final_status
             )
+            browser.close_browser()
             if not IS_DEV:
+                wait_time = 4800
                 # Ждем какое-то время между каждой итерацией
-                time.sleep(4800)
+                logger.info(f"Ждем {wait_time} секунд")
+                time.sleep(wait_time)
 
     except Exception as e:
         logger.error(f"Ошибка в процессе выполнения: {e}")
@@ -42,7 +45,7 @@ def run_application(notifier: Notifier):
 
         log_report(establishments_data, final_status)
 
-        if IS_DEV:
+        if not IS_DEV:
             # Обновляем данные по обработкам независимо от успешности
             today = datetime.now().strftime(
                 "%d.%m.%Y"
@@ -69,7 +72,7 @@ def run_application(notifier: Notifier):
             )
             notifier.send_file(file_name)
 
-        logger.info(f"Следующий старт в {APPLICATION_RUN_TIME}")
+            logger.info(f"Следующий старт в {APPLICATION_RUN_TIME}")
 
 
 def log_report(establishments_data, final_status):

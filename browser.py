@@ -42,7 +42,7 @@ class Browser:
 
     def close_browser(self):
         """Закрытие браузера"""
-        if self.driver and not self.is_open:
+        if self.driver and self.is_open:
             try:
                 self.driver.quit()
                 self.is_open = False
