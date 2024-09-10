@@ -6,3 +6,4 @@ msedgedriver.exe
 *.log
 test_account_cookie
 Отчет*
+test.py
