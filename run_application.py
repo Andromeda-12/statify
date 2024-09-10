@@ -16,10 +16,9 @@ def run_application(notifier: Notifier):
     browser = Browser()
 
     # Инициализация словаря для отслеживания количества успешных обработок
-    final_status = {establishment["name"]: 0 for establishment in establishments_data}
-    # Даты обработок
-    establishment_dates = {
-        establishment["name"]: {} for establishment in establishments_data
+    final_status = {
+        establishment["id"]: {query: 0 for query in establishment["queries"]}
+        for establishment in establishments_data
     }
 
     try:
@@ -44,14 +43,26 @@ def run_application(notifier: Notifier):
 
         log_report(establishments_data, final_status)
 
-        if not IS_DEV:
+        if IS_DEV:
             # Обновляем данные по обработкам независимо от успешности
             today = datetime.now().strftime(
                 "%d.%m.%Y"
             )  # Текущая дата в формате дд.мм.гггг
+            # Даты обработок
+            establishment_dates = {}
+            # Инициализируем запись для текущей даты, если её нет
+            if today not in establishment_dates:
+                establishment_dates[today] = {}
+
             for establishment in establishments_data:
-                name = establishment["name"]
-                establishment_dates[name][today] = final_status[name]
+                establishment_id = establishment["id"]
+                # Инициализируем запись для заведения, если её нет
+                if establishment_id not in establishment_dates[today]:
+                    establishment_dates[today][establishment_id] = {}
+
+                # Копируем данные по запросам из final_status для текущей даты
+                for query, count in final_status[establishment_id].items():
+                    establishment_dates[today][establishment_id][query] = count
 
             # Создание или обновление Excel файла
             file_name = create_or_update_excel_report(
@@ -62,16 +73,18 @@ def run_application(notifier: Notifier):
 
 def log_report(establishments_data, final_status):
     for establishment in establishments_data:
-        name = establishment["name"]
+        establishment_id = establishment["id"]
         repeats_required = establishment["repeats"]
+        total_successful_repeats = sum(final_status[establishment_id].values())
 
-        if final_status[name] == repeats_required:
+        if total_successful_repeats == repeats_required:
             logger.success(
-                f"Заведение '{name}' успешно обработано {final_status[name]}/{repeats_required} {declension(final_status[name], 'раз', 'раза', 'раз')}"
+                f"Заведение '{establishment_id}' успешно обработано {total_successful_repeats}/{repeats_required} раз(а)"
             )
         else:
             logger.critical(
-                f"Заведение '{name}' не было обработано {repeats_required} {declension(repeats_required, 'раз', 'раза', 'раз')}. "
-                f"Успешные обработки: {final_status[name]}/{repeats_required}. "
-                f"Запрос: {establishment['queries']}, Координаты: {establishment['coordinates']}"
+                f"Заведение '{establishment_id}' не было обработано {repeats_required} раз(а). "
+                f"Успешные обработки: {total_successful_repeats}/{repeats_required}. "
+                f"Запросы: {', '.join(establishment['queries'])}, "
+                f"Координаты: {establishment['coordinates']['latitude']}, {establishment['coordinates']['longitude']}"
             )

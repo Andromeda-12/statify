@@ -25,8 +25,10 @@ def process_establishment_logic(
     max_attempts: int,
     repeat_number: int,
     total_repeats: int,
+    final_status: dict,
 ):
     """Выполнить логику для одного заведения"""
+    target_establishment_id = establishment["id"]
     target_establishment_name = establishment["name"]
     target_establishment_queries = establishment["queries"]
     # Выбираем случайную строку из массива
@@ -38,7 +40,7 @@ def process_establishment_logic(
     longitude = target_establishment_coordinates.get("longitude")
     coordinates_string = f"{latitude}, {longitude}"
     logger.info(
-        f"Обработка заведения: {target_establishment_name}, запрос: {target_establishment_query}, координаты {coordinates_string}"
+        f"Обработка заведения: {target_establishment_id}, запрос: {target_establishment_query}, координаты {coordinates_string}"
     )
     logger.info(
         f"повтор: {repeat_number + 1}/{total_repeats}, попытка: {attempt_number + 1}/{max_attempts}"
@@ -79,13 +81,13 @@ def process_establishment_logic(
                 == MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS
             ):
                 logger.warning(
-                    f"Целевое заведение '{target_establishment_name}' не найдено на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
+                    f"Целевое заведение '{target_establishment_id}' не найдено на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
                 )
                 break
 
             if target_establishment_index == -1:
                 logger.warning(
-                    f"Целевое заведение '{target_establishment_name}' не найдено на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}. Перезагружаем страницу и пробуем снова"
+                    f"Целевое заведение '{target_establishment_id}' не найдено на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}. Перезагружаем страницу и пробуем снова"
                 )
                 get_target_establishment_attempt += 1
                 browser.driver.refresh()
@@ -93,7 +95,7 @@ def process_establishment_logic(
                 continue
 
             logger.success(
-                f"Целевое заведение '{target_establishment_name}' найдено на индексе {target_establishment_index + 1} на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
+                f"Целевое заведение '{target_establishment_id}' найдено на индексе {target_establishment_index + 1} на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
             )
             break
         except Exception as e:
@@ -106,7 +108,7 @@ def process_establishment_logic(
 
     if target_establishment_index == -1:
         logger.error(
-            f"Не удалось получить целевое заведение '{target_establishment_name}' после {MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} попыток"
+            f"Не удалось получить целевое заведение '{target_establishment_id}' после {MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} попыток"
         )
         raise Exception(f"Не удалось получить целевое заведение: {e}")
 
@@ -146,9 +148,13 @@ def process_establishment_logic(
         interact_with_target_establishment(browser, target_establishment)
 
         logger.success(
-            f"Выполнено целевое действие для заведения '{target_establishment_name}'"
+            f"Выполнено целевое действие для заведения '{target_establishment_id}'"
         )
         logger.info("_______________________________________________________")
+
+        # Обновляем счетчик обработок по запросу
+        final_status[target_establishment_id][target_establishment_query] += 1
+
     except Exception as e:
         logger.error(f"Ошибка при обработке заведения: {e}")
         raise
@@ -162,11 +168,11 @@ def process_establishments(
 ):
     # Отслеживание успешности обработки каждого заведения
     establishment_status = {
-        establishment["name"]: False
+        establishment["id"]: False
         for establishment in establishments_data
         if repetition_number < establishment["repeats"]
     }
-    attempts = {establishment["name"]: 0 for establishment in establishments_data}
+    attempts = {establishment["id"]: 0 for establishment in establishments_data}
 
     while should_continue_processing(
         establishments_data,
@@ -175,16 +181,19 @@ def process_establishments(
         MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS,
     ):
         for establishment in establishments_data:
-            name = establishment["name"]
+            establishment_id = establishment["id"]
 
-            if name in establishment_status and establishment_status[name]:
+            if (
+                establishment_id in establishment_status
+                and establishment_status[establishment_id]
+            ):
                 continue  # Пропускаем заведения, которые уже обработаны
 
             total_establishment_repeats = establishment["repeats"]
 
             if repetition_number < total_establishment_repeats:
                 try:
-                    attempt_number = attempts[name]
+                    attempt_number = attempts[establishment_id]
                     # Выполняем логику для текущего заведения
                     process_establishment_logic(
                         browser,
@@ -193,13 +202,13 @@ def process_establishments(
                         MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS,
                         repetition_number,  # Текущий номер повтора, начиная с 1
                         total_establishment_repeats,
+                        final_status,  # Передаем final_status для обновления
                     )
 
                     # Если логика выполнилась успешно, отмечаем заведение как обработанное
-                    establishment_status[name] = True
-                    final_status[name] += 1
+                    establishment_status[establishment_id] = True
                     logger.success(
-                        f"Заведение {establishment['name']} успешно обработано"
+                        f"Заведение {establishment['id']} успешно обработано"
                     )
                     logger.info(
                         "________________________________________________________________________________________________________"
@@ -207,16 +216,19 @@ def process_establishments(
 
                 except Exception as e:
                     logger.error(
-                        f"Ошибка при обработке заведения {establishment['name']}: {e}"
+                        f"Ошибка при обработке заведения {establishment['id']}: {e}"
                     )
-                    attempts[name] += 1
-                    if attempts[name] >= MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS:
+                    attempts[establishment_id] += 1
+                    if (
+                        attempts[establishment_id]
+                        >= MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS
+                    ):
                         latitude = establishment["coordinates"].get("latitude")
                         longitude = establishment["coordinates"].get("longitude")
                         coordinates_string = f"{latitude}, {longitude}"
                         logger.critical(
-                            f"""Не удалось обработать заведение {establishment['name']} после {MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS} попыток.
-                            Ниша: '{establishment["queries"]}'. "
+                            f"""Не удалось обработать заведение {establishment['id']} после {MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS} попыток.
+                            Запросы: {', '.join(establishment['queries'])}, 
                             Координаты: {coordinates_string}"""
                         )
                         logger.info(
@@ -248,11 +260,11 @@ def should_continue_processing(
     Проверяет, нужно ли продолжать цикл обработки заведений
     """
     for establishment in establishments_data:
-        name = establishment["name"]
+        establishment_id = establishment["id"]
         # Проверяем, есть ли заведение в словарях establishment_status и attempts
-        if name in establishment_status and name in attempts:
+        if establishment_id in establishment_status and establishment_id in attempts:
             # Если статус заведения False и количество попыток меньше максимума, продолжаем цикл
-            if not establishment_status[name] and attempts[name] < max_attempts:
+            if not establishment_status[establishment_id] and attempts[establishment_id] < max_attempts:
                 return True
     # Если не нашлось ни одного заведения, у которого можно продолжить попытки, завершаем цикл
     return False
