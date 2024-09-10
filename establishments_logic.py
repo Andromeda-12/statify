@@ -264,7 +264,10 @@ def should_continue_processing(
         # Проверяем, есть ли заведение в словарях establishment_status и attempts
         if establishment_id in establishment_status and establishment_id in attempts:
             # Если статус заведения False и количество попыток меньше максимума, продолжаем цикл
-            if not establishment_status[establishment_id] and attempts[establishment_id] < max_attempts:
+            if (
+                not establishment_status[establishment_id]
+                and attempts[establishment_id] < max_attempts
+            ):
                 return True
     # Если не нашлось ни одного заведения, у которого можно продолжить попытки, завершаем цикл
     return False
@@ -281,7 +284,9 @@ def input_coordinates(browser: Browser, coordinates: dict):
         )
         browser.move_to_element_and_click(search_input)
         # Очищаем инпут
+        search_input.clear()
         search_input.send_keys(Keys.BACKSPACE * 500)
+        time.sleep(2)
         # Вводим координаты
         latitude = coordinates.get("latitude")
         longitude = coordinates.get("longitude")
@@ -291,7 +296,8 @@ def input_coordinates(browser: Browser, coordinates: dict):
         # Ждем некоторое время, чтобы карта загрузилась
         time.sleep(5)
         # Очищаем введенные координаты с помощью BACKSPACE
-        search_input.send_keys(Keys.BACKSPACE * len(coordinates_string))
+        search_input.send_keys(Keys.BACKSPACE * 200)
+        time.sleep(2)
         logger.info(f"Координаты {coordinates_string} введены")
 
     except NoSuchElementException:
@@ -315,7 +321,9 @@ def input_query_and_search(browser: Browser, query: str):
         )
         browser.move_to_element_and_click(search_input)
         # Очищаем инпут
+        search_input.clear()
         search_input.send_keys(Keys.BACKSPACE * 500)
+        time.sleep(2)
         # Вводим нишу заведения
         search_input.send_keys(query)
         # Находим кнопку "Найти" и нажимаем её
@@ -326,7 +334,8 @@ def input_query_and_search(browser: Browser, query: str):
         # Ждем некоторое время, чтобы результаты поиска загрузились
         time.sleep(5)
         # Очищаем инпут
-        search_input.send_keys(Keys.BACKSPACE * len(query))
+        search_input.send_keys(Keys.BACKSPACE * 200)
+        time.sleep(2)
         # Инпут все еще в фокусе, убираем фокус
         search_input.send_keys(Keys.ESCAPE)
         logger.info(f"Запрос '{query}' введен, поиск выполнен успешно")

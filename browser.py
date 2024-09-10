@@ -73,6 +73,7 @@ class Browser:
         Прокрутка до элемента
         """
         self.driver.execute_script("arguments[0].scrollIntoViewIfNeeded();", element)
+        time.sleep(1)
 
     def move_to_element(self, element: WebElement):
         # Прокручиваем страницу до элемента
@@ -86,9 +87,9 @@ class Browser:
         offset_x = random.randint(-max_offset_x, max_offset_x)
         offset_y = random.randint(-max_offset_y, max_offset_y)
         # Выполняем перемещение
-        ActionChains(self.driver).move_to_element_with_offset(
-            element, offset_x, offset_y
-        ).perform()
+        ActionChains(self.driver).scroll_to_element(
+            element
+        ).move_to_element_with_offset(element, offset_x, offset_y).perform()
         time.sleep(0.5)
 
     def move_to_element_and_click(self, element: WebElement):
@@ -103,7 +104,7 @@ class Browser:
         offset_x = random.randint(-max_offset_x, max_offset_x)
         offset_y = random.randint(-max_offset_y, max_offset_y)
         # Выполняем перемещение и клик
-        ActionChains(self.driver).move_to_element_with_offset(
-            element, offset_x, offset_y
-        ).click().perform()
+        ActionChains(self.driver).scroll_to_element(
+            element
+        ).move_to_element_with_offset(element, offset_x, offset_y).click().perform()
         time.sleep(0.5)

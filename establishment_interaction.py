@@ -91,6 +91,8 @@ def browse_establishment_photos(browser: Browser):
         time.sleep(3)
         logger.info("Клик по кнопке с фото")
         browser.move_to_element_and_click(photos_button)
+        # Потому что не всегда кликается
+        photos_button.click()
         time.sleep(3)
     except TimeoutException:
         logger.warning("Не удалось найти кнопку фотографий")
@@ -104,9 +106,8 @@ def browse_establishment_photos(browser: Browser):
         photo_element = browser.wait_for_condition(
             EC.presence_of_element_located((By.CLASS_NAME, "media-wrapper")), 10
         )
-        browser.move_to_element(photo_element)
+        browser.move_to_element_and_click(photo_element)
         logger.info("Клик по фото")
-        photo_element.click()
         time.sleep(3)
         close_button = browser.wait_for_condition(
             EC.presence_of_element_located(
@@ -114,8 +115,7 @@ def browse_establishment_photos(browser: Browser):
             ),
             10,
         )
-        browser.move_to_element(close_button)
-        close_button.click()
+        browser.move_to_element_and_click(close_button)
         logger.info("Фото закрыто")
         time.sleep(3)
     except TimeoutException:
@@ -149,9 +149,9 @@ def browse_establishment_reviews(browser: Browser):
             )
             browser.scroll_to(reviews_button)
             time.sleep(5)
-            browser.move_to_element(reviews_button)
-            logger.info("Клик по отзывам")
+            browser.move_to_element_and_click(reviews_button)
             reviews_button.click()
+            logger.info("Клик по отзывам")
             time.sleep(5)
         except TimeoutException:
             logger.warning("Не удалось найти кнопку отзывов")
