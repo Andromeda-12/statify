@@ -55,4 +55,5 @@ MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS = 2
 # Количество заведений, которое будет просмотрено перед целевым заведением
 MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET = 5
 # Количество, сколько раз нужно посмотреть отзывы
-MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS = 3
+# Максимальное количество, сколько нужно раз нажать на кнопку зума
+MAX_ZOOM_TIMES = 5

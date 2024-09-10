@@ -1,3 +1,4 @@
+import random
 import time
 from loguru import logger
 from selenium.webdriver.common.by import By
@@ -8,6 +9,7 @@ from config import (
     MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET,
     MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS,
     MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS,
+    MAX_ZOOM_TIMES,
 )
 from establishment_interaction import (
     interact_with_establishment,
@@ -26,7 +28,9 @@ def process_establishment_logic(
 ):
     """Выполнить логику для одного заведения"""
     target_establishment_name = establishment["name"]
-    target_establishment_niche = establishment["niche"]
+    target_establishment_queries = establishment["queries"]
+    # Выбираем случайную строку из массива
+    target_establishment_query = random.choice(target_establishment_queries)
     target_establishment_coordinates = establishment["coordinates"]
     target_establishment_address = establishment["address"]
 
@@ -34,7 +38,7 @@ def process_establishment_logic(
     longitude = target_establishment_coordinates.get("longitude")
     coordinates_string = f"{latitude}, {longitude}"
     logger.info(
-        f"Обработка заведения {target_establishment_name} ({target_establishment_niche}) с координатами {coordinates_string}"
+        f"Обработка заведения: {target_establishment_name}, запрос: {target_establishment_query}, координаты {coordinates_string}"
     )
     logger.info(
         f"повтор: {repeat_number + 1}/{total_repeats}, попытка: {attempt_number + 1}/{max_attempts}"
@@ -47,7 +51,13 @@ def process_establishment_logic(
     while get_target_establishment_attempt < MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS:
         try:
             input_coordinates(browser, target_establishment_coordinates)
-            input_niche_and_search(browser, target_establishment_niche)
+            input_query_and_search(browser, target_establishment_query)
+
+            zoom_times = min(get_target_establishment_attempt + 1, MAX_ZOOM_TIMES)
+
+            for _ in range(zoom_times):
+                zoom_in(browser)
+
             establishments = get_establishments(browser)
 
             if not establishments:
@@ -206,7 +216,7 @@ def process_establishments(
                         coordinates_string = f"{latitude}, {longitude}"
                         logger.critical(
                             f"""Не удалось обработать заведение {establishment['name']} после {MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS} попыток.
-                            Ниша: '{establishment["niche"]}'. "
+                            Ниша: '{establishment["queries"]}'. "
                             Координаты: {coordinates_string}"""
                         )
                         logger.info(
@@ -282,7 +292,7 @@ def input_coordinates(browser: Browser, coordinates: dict):
         raise
 
 
-def input_niche_and_search(browser: Browser, niche: str):
+def input_query_and_search(browser: Browser, query: str):
     """
     Вводит нишу заведения в инпут поиска на карте и выполняет поиск
     """
@@ -295,7 +305,7 @@ def input_niche_and_search(browser: Browser, niche: str):
         # Очищаем инпут
         search_input.send_keys(Keys.BACKSPACE * 500)
         # Вводим нишу заведения
-        search_input.send_keys(niche)
+        search_input.send_keys(query)
         # Находим кнопку "Найти" и нажимаем её
         search_button = browser.driver.find_element(
             By.XPATH, '//button[@aria-label="Найти"]'
@@ -304,10 +314,10 @@ def input_niche_and_search(browser: Browser, niche: str):
         # Ждем некоторое время, чтобы результаты поиска загрузились
         time.sleep(5)
         # Очищаем инпут
-        search_input.send_keys(Keys.BACKSPACE * len(niche))
+        search_input.send_keys(Keys.BACKSPACE * len(query))
         # Инпут все еще в фокусе, убираем фокус
         search_input.send_keys(Keys.ESCAPE)
-        logger.info(f"Ниша '{niche}' введена, поиск выполнен успешно")
+        logger.info(f"Запрос '{query}' введен, поиск выполнен успешно")
 
     except NoSuchElementException:
         logger.error("Не удалось найти инпут или кнопку для поиска")
@@ -320,3 +330,22 @@ def input_niche_and_search(browser: Browser, niche: str):
     except Exception as e:
         logger.error(f"Произошла ошибка при вводе ниши и выполнении поиска: {e}")
         raise
+
+
+def zoom_in(browser: Browser):
+    """
+    Находит кнопку приближения и нажимает на нее
+    """
+    try:
+        zoom_in_button = browser.driver.find_element(
+            By.XPATH, '//button[@aria-label="Приблизить"]'
+        )
+        browser.move_to_element_and_click(zoom_in_button)
+        logger.info("Кнопка 'Приблизить' нажата")
+        time.sleep(1.5)
+    except NoSuchElementException:
+        logger.error("Кнопка 'Приблизить' не найдена на странице")
+    except TimeoutException:
+        logger.error("Превышено время ожидания кнопки 'Приблизить'")
+    except Exception as e:
+        logger.error(f"Произошла ошибка при попытке нажать на кнопку 'Приблизить': {e}")

@@ -37,9 +37,9 @@ def create_or_update_excel_report(establishments_data, establishment_dates):
 
         # Заполняем строками с пустыми значениями
         for row_index, establishment in enumerate(establishments_data, start=2):
-            niche = establishment["niche"]
+            queries = establishment["queries"]
             name = establishment["name"]
-            row = [f"{name} ({niche})"]  # Название заведения
+            row = [f"{name} ({queries})"]  # Название заведения
 
             # Формула для подсчета частоты
             last_date_column = get_column_letter(len(headers))
@@ -91,8 +91,8 @@ def create_or_update_excel_report(establishments_data, establishment_dates):
         if name not in existing_establishments:
             logger.info(f"Добавление нового заведения '{name}' в отчет.")
 
-            niche = establishment["niche"]
-            row = [f"{name} ({niche})"]  # Название заведения
+            queries = establishment["queries"]
+            row = [f"{name} ({queries})"]  # Название заведения
 
             # Формула для подсчета частоты
             last_date_column = get_column_letter(len(headers))

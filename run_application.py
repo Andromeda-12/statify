@@ -73,5 +73,5 @@ def log_report(establishments_data, final_status):
             logger.critical(
                 f"Заведение '{name}' не было обработано {repeats_required} {declension(repeats_required, 'раз', 'раза', 'раз')}. "
                 f"Успешные обработки: {final_status[name]}/{repeats_required}. "
-                f"Ниша: {establishment['niche']}, Координаты: {establishment['coordinates']}"
+                f"Запрос: {establishment['queries']}, Координаты: {establishment['coordinates']}"
             )
