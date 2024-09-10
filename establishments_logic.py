@@ -110,7 +110,7 @@ def process_establishment_logic(
         logger.error(
             f"Не удалось получить целевое заведение '{target_establishment_id}' после {MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} попыток"
         )
-        raise Exception(f"Не удалось получить целевое заведение: {e}")
+        raise Exception(f"Не удалось получить целевое заведение")
 
     try:
         # Взаимодействие с несколькими заведениями до целевого заведения
