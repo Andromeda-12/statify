@@ -53,7 +53,7 @@ class Browser:
             logger.warning("Браузер не был запущен или уже закрыт")
 
     def wait_for_condition(
-        self, func, wait_time=BROWSER_CONDITION_WAIT_TIME
+        self, func, wait_time=BROWSER_CONDITION_WAIT_TIME, silent=False
     ) -> WebElement:
         """
         Ожидание выполнения условия
@@ -65,8 +65,9 @@ class Browser:
         try:
             return WebDriverWait(self.driver, wait_time).until(func)
         except TimeoutException:
-            logger.warning(f"Условие не было выполнено в течение {wait_time} секунд")
-            raise
+            if not silent:
+                logger.warning(f"Условие не было выполнено в течение {wait_time} секунд")
+                raise
 
     def scroll_to(self, element: WebElement):
         """

@@ -12,7 +12,6 @@ from config import MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS
 def interact_with_establishment(browser: Browser, establishment: WebElement):
     open_establishment_card(browser, establishment)
     check_modal_window(browser)
-    set_arrow_buttons_display_none(browser)
     browse_establishment_photos(browser)
     browse_establishment_reviews_multiple_times(browser)
 
@@ -36,6 +35,7 @@ def check_modal_window(browser: Browser):
                 (By.CSS_SELECTOR, '.close-button[aria-label="Закрыть"]')
             ),
             5,  # Задаем время ожидания в секундах
+            silent=True,
         )
         browser.wait_for_condition(EC.element_to_be_clickable(close_button), 15)
         browser.move_to_element(close_button)
@@ -76,6 +76,7 @@ def open_establishment_overview(browser: Browser):
         time.sleep(5)
         browser.wait_for_condition(EC.element_to_be_clickable(overview_button), 15)
         logger.info('Клик по кнопке "Обзор"')
+        try_hide_arrows(browser)
         browser.move_to_element_and_click(overview_button)
         time.sleep(5)
     except TimeoutException:
@@ -95,6 +96,7 @@ def browse_establishment_photos(browser: Browser):
             10,
         )
         browser.scroll_to(photos_button)
+        try_hide_arrows(browser)
         time.sleep(3)
         browser.wait_for_condition(EC.element_to_be_clickable(photos_button), 15)
         logger.info("Клик по кнопке с фото")
@@ -115,6 +117,7 @@ def browse_establishment_photos(browser: Browser):
             EC.presence_of_element_located((By.CLASS_NAME, "media-wrapper")), 10
         )
         browser.wait_for_condition(EC.element_to_be_clickable(photo_element), 15)
+        try_hide_arrows(browser)
         browser.move_to_element_and_click(photo_element)
         logger.info("Клик по фото")
         time.sleep(3)
@@ -162,6 +165,7 @@ def browse_establishment_reviews(browser: Browser):
             browser.scroll_to(reviews_button)
             time.sleep(5)
             browser.wait_for_condition(EC.element_to_be_clickable(reviews_button), 15)
+            try_hide_arrows(browser)
             browser.move_to_element_and_click(reviews_button)
             reviews_button.click()
             logger.info("Клик по отзывам")
@@ -288,19 +292,31 @@ def click_website_link(browser: Browser):
         return False
 
 
-def set_arrow_buttons_display_none(browser: Browser):
+def try_hide_arrows(browser: Browser):
     try:
-        prev_arrow = browser.driver.find_element(
-            By.CSS_SELECTOR, ".carousel__arrow-wrapper._centered._prev._size_m"
-        )
-        next_arrow = browser.driver.find_element(
-            By.CSS_SELECTOR, ".carousel__arrow-wrapper._centered._next._size_m"
-        )
-        browser.driver.execute_script(
-            "arguments[0].style.display = 'none';", prev_arrow
+        next_arrow = browser.wait_for_condition(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, ".carousel__arrow-wrapper._centered._next")
+            ),
+            1,
+            silent=True,
         )
         browser.driver.execute_script(
             "arguments[0].style.display = 'none';", next_arrow
         )
     except:
-        logger.error("Не удалось найти кнопки со стрелкой и скрыть их")
+        pass
+
+    try:
+        prev_arrow = browser.wait_for_condition(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, ".carousel__arrow-wrapper._centered._prev")
+            ),
+            1,
+            silent=True,
+        )
+        browser.driver.execute_script(
+            "arguments[0].style.display = 'none';", prev_arrow
+        )
+    except:
+        pass
