@@ -12,6 +12,7 @@ from config import MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS
 def interact_with_establishment(browser: Browser, establishment: WebElement):
     open_establishment_card(browser, establishment)
     check_modal_window(browser)
+    set_arrow_buttons_display_none(browser)
     browse_establishment_photos(browser)
     browse_establishment_reviews_multiple_times(browser)
 
@@ -128,7 +129,9 @@ def browse_establishment_photos(browser: Browser):
         logger.info("Фото закрыто")
         time.sleep(3)
     except TimeoutException:
-        logger.warning("Элемент с фото не найден, или не получилось закрыть фото, или кнопка не кликабельная")
+        logger.warning(
+            "Элемент с фото не найден, или не получилось закрыть фото, или кнопка не кликабельная"
+        )
         return
     except Exception as e:
         logger.warning(f"Ошибка при попытке посмотреть или закрыть фото: {e}")
@@ -283,3 +286,21 @@ def click_website_link(browser: Browser):
     except Exception:
         logger.warning("Кнопка сайта не найдена")
         return False
+
+
+def set_arrow_buttons_display_none(browser: Browser):
+    try:
+        prev_arrow = browser.driver.find_element(
+            By.CSS_SELECTOR, ".carousel__arrow-wrapper._centered._prev._size_m"
+        )
+        next_arrow = browser.driver.find_element(
+            By.CSS_SELECTOR, ".carousel__arrow-wrapper._centered._next._size_m"
+        )
+        browser.driver.execute_script(
+            "arguments[0].style.display = 'none';", prev_arrow
+        )
+        browser.driver.execute_script(
+            "arguments[0].style.display = 'none';", next_arrow
+        )
+    except:
+        logger.error("Не удалось найти кнопки со стрелкой и скрыть их")
