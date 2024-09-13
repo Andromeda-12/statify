@@ -24,6 +24,14 @@ def interact_with_target_establishment(
     perform_target_action(browser)
 
 
+def interact_with_single_target_establishment(browser: Browser):
+    check_modal_window(browser)
+    browse_establishment_photos(browser)
+    browse_establishment_reviews_multiple_times(browser)
+    open_establishment_overview(browser)
+    perform_target_action(browser)
+
+
 def check_modal_window(browser: Browser):
     try:
         browser.wait_for_condition(
@@ -233,14 +241,17 @@ def perform_target_action(browser: Browser):
 
 
 def return_to_yandex_map_after_target_action(browser: Browser):
-    # Запоминаем текущую вкладку
-    original_window = browser.driver.current_window_handle
-    # Находим новую вкладку и переключаемся на неё
-    new_window = browser.driver.window_handles[-1]
-    browser.driver.switch_to.window(new_window)
-    time.sleep(5)  # Ожидание, чтобы убедиться, что страница загрузилась
-    browser.driver.close()
-    browser.driver.switch_to.window(original_window)
+    try:
+        # Запоминаем текущую вкладку
+        original_window = browser.driver.current_window_handle
+        # Находим новую вкладку и переключаемся на неё
+        new_window = browser.driver.window_handles[-1]
+        browser.driver.switch_to.window(new_window)
+        time.sleep(5)  # Ожидание, чтобы убедиться, что страница загрузилась
+        browser.driver.close()
+        browser.driver.switch_to.window(original_window)
+    except:
+        logger.error("Ошибка в return_to_yandex_map_after_target_action")
 
 
 def click_telegram_link(browser: Browser):
@@ -278,10 +289,14 @@ def click_whatsapp_link(browser: Browser):
 
 def click_website_link(browser: Browser):
     try:
+        scroll_container = browser.wait_for_condition(
+            EC.element_to_be_clickable((By.CLASS_NAME, "scroll__container")),
+            5,
+        )
+        browser.driver.execute_script("arguments[0].scrollTop = 0;", scroll_container)
+
         button = browser.wait_for_condition(
-            EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, ".action-button-view._type_web")
-            ),
+            EC.element_to_be_clickable((By.CSS_SELECTOR, '[aria-label="Сайт"]')),
             5,
         )
         browser.wait_for_condition(EC.element_to_be_clickable(button), 15)

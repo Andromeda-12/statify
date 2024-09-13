@@ -58,8 +58,9 @@ def get_target_establishment_index(
             address = establishment.find_element(
                 By.CSS_SELECTOR, ".search-business-snippet-view__address"
             ).text
-            if name == establishment_name and is_address_match(
-                address, establishment_address
+            if (
+                name.lower().strip() == establishment_name.lower().strip()
+                and is_address_match(address, establishment_address)
             ):
                 return index
         except Exception as e:

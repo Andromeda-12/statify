@@ -13,6 +13,7 @@ from config import (
 )
 from establishment_interaction import (
     interact_with_establishment,
+    interact_with_single_target_establishment,
     interact_with_target_establishment,
 )
 from establishments_scraping import get_establishments, get_target_establishment_index
@@ -54,7 +55,7 @@ def process_establishment_logic(
         try:
             input_coordinates(browser, target_establishment_coordinates)
             input_query_and_search(browser, target_establishment_query)
-
+            
             zoom_times = min(get_target_establishment_attempt + 1, MAX_ZOOM_TIMES)
 
             for _ in range(zoom_times):
@@ -62,8 +63,64 @@ def process_establishment_logic(
 
             establishments = get_establishments(browser)
 
+            # Ситуация, когда рядом нет больше заведений по такому запросу и сразу же открывается целевое заведение
+            if (
+                not establishments
+                and get_target_establishment_attempt + 1
+                == MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS
+            ):
+                try:
+                    logger.info(
+                        f"Проверка, что по запросу '{target_establishment_query}' сразу было найдено целевое заведение '{target_establishment_id}'"
+                    )
+
+                    title = browser.driver.find_element(
+                        By.CLASS_NAME, "card-title-view__title-link"
+                    ).text
+
+                    if (
+                        title.lower().strip()
+                        == target_establishment_name.lower().strip()
+                    ):
+                        logger.info(
+                            f"По запросу '{target_establishment_query}' сразу было найдено целевое заведение '{target_establishment_id}'"
+                        )
+                        logger.info(
+                            "_______________________________________________________"
+                        )
+                        logger.info(
+                            f"Взаимодействие с целевым заведением '{target_establishment_id}'"
+                        )
+
+                        interact_with_single_target_establishment(browser)
+
+                        logger.success(
+                            f"Выполнено целевое действие для заведения '{target_establishment_id}'"
+                        )
+                        logger.info(
+                            "_______________________________________________________"
+                        )
+
+                        # Обновляем счетчик обработок по запросу
+                        final_status[target_establishment_id][
+                            target_establishment_query
+                        ] += 1
+                        return
+
+                except Exception as e:
+                    logger.error(
+                        f"Ошибка при попытке обработать заведение '{target_establishment_id}' по запросу '{target_establishment_query}': {e}"
+                    )
+                    break
+
             if not establishments:
-                raise Exception("Список заведений пуст")
+                logger.warning(
+                    f"Список заведений пуст при попытке обработать заведение '{target_establishment_id}' на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}. Перезагружаем страницу и пробуем снова"
+                )
+                get_target_establishment_attempt += 1
+                browser.driver.refresh()
+                time.sleep(5)
+                continue
 
             logger.info(
                 f"Попытка {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS} получения целевого заведений"
@@ -143,7 +200,7 @@ def process_establishment_logic(
         target_establishment = establishments[target_establishment_index]
 
         logger.info("_______________________________________________________")
-        logger.info("Взаимодействие с целевым заведением")
+        logger.info(f"Взаимодействие с целевым заведением '{target_establishment_id}'")
 
         interact_with_target_establishment(browser, target_establishment)
 
