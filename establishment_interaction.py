@@ -36,6 +36,7 @@ def check_modal_window(browser: Browser):
             ),
             5,  # Задаем время ожидания в секундах
         )
+        browser.wait_for_condition(EC.element_to_be_clickable(close_button), 15)
         browser.move_to_element(close_button)
         browser.driver.execute_script("arguments[0].click();", close_button)
         logger.info("Модальное окно закрыто")
@@ -50,6 +51,7 @@ def check_modal_window(browser: Browser):
 
 def open_establishment_card(browser: Browser, establishment: WebElement):
     try:
+        browser.wait_for_condition(EC.element_to_be_clickable(establishment), 15)
         # Кликаем на заведение
         browser.move_to_element_and_click(establishment)
         # Ждем, когда откроется карточка с информацией о заведении
@@ -71,9 +73,13 @@ def open_establishment_overview(browser: Browser):
         )
         browser.scroll_to(overview_button)
         time.sleep(5)
+        browser.wait_for_condition(EC.element_to_be_clickable(overview_button), 15)
         logger.info('Клик по кнопке "Обзор"')
         browser.move_to_element_and_click(overview_button)
         time.sleep(5)
+    except TimeoutException:
+        logger.warning("Не удалось найти кнопку обзор или она не кликабельная")
+        return
     except Exception as e:
         logger.error(f"Не удалось найти или нажать на кнопку обзор: {e}")
         time.sleep(3)
@@ -89,13 +95,14 @@ def browse_establishment_photos(browser: Browser):
         )
         browser.scroll_to(photos_button)
         time.sleep(3)
+        browser.wait_for_condition(EC.element_to_be_clickable(photos_button), 15)
         logger.info("Клик по кнопке с фото")
         browser.move_to_element_and_click(photos_button)
         # Потому что не всегда кликается
         photos_button.click()
         time.sleep(3)
     except TimeoutException:
-        logger.warning("Не удалось найти кнопку фотографий")
+        logger.warning("Не удалось найти кнопку фотографий или она не кликабельная")
         return
     except Exception as e:
         logger.error(f"Ошибка при попытке найти кнопку фотографий: {e}")
@@ -106,6 +113,7 @@ def browse_establishment_photos(browser: Browser):
         photo_element = browser.wait_for_condition(
             EC.presence_of_element_located((By.CLASS_NAME, "media-wrapper")), 10
         )
+        browser.wait_for_condition(EC.element_to_be_clickable(photo_element), 15)
         browser.move_to_element_and_click(photo_element)
         logger.info("Клик по фото")
         time.sleep(3)
@@ -115,11 +123,12 @@ def browse_establishment_photos(browser: Browser):
             ),
             10,
         )
+        browser.wait_for_condition(EC.element_to_be_clickable(close_button), 15)
         browser.move_to_element_and_click(close_button)
         logger.info("Фото закрыто")
         time.sleep(3)
     except TimeoutException:
-        logger.warning("Элемент с фото не найден или не получилось закрыть фото")
+        logger.warning("Элемент с фото не найден, или не получилось закрыть фото, или кнопка не кликабельная")
         return
     except Exception as e:
         logger.warning(f"Ошибка при попытке посмотреть или закрыть фото: {e}")
@@ -149,12 +158,13 @@ def browse_establishment_reviews(browser: Browser):
             )
             browser.scroll_to(reviews_button)
             time.sleep(5)
+            browser.wait_for_condition(EC.element_to_be_clickable(reviews_button), 15)
             browser.move_to_element_and_click(reviews_button)
             reviews_button.click()
             logger.info("Клик по отзывам")
             time.sleep(5)
         except TimeoutException:
-            logger.warning("Не удалось найти кнопку отзывов")
+            logger.warning("Не удалось найти кнопку отзывов или она не кликабельная")
             return
         except Exception as e:
             logger.error(f"Ошибка при попытке найти кнопку отзывов: {e}")
@@ -234,6 +244,7 @@ def click_telegram_link(browser: Browser):
             ),
             5,
         )
+        browser.wait_for_condition(EC.element_to_be_clickable(button), 15)
         # По ссылкам надо кликать так
         browser.move_to_element_and_click(button)
         return True
@@ -250,6 +261,7 @@ def click_whatsapp_link(browser: Browser):
             ),
             5,
         )
+        browser.wait_for_condition(EC.element_to_be_clickable(button), 15)
         browser.move_to_element_and_click(button)
         return True
     except Exception:
@@ -265,6 +277,7 @@ def click_website_link(browser: Browser):
             ),
             5,
         )
+        browser.wait_for_condition(EC.element_to_be_clickable(button), 15)
         browser.move_to_element_and_click(button)
         return True
     except Exception:
