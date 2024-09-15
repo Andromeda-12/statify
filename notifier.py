@@ -22,12 +22,13 @@ class Notifier:
         self.send_notification("Бот работает")
 
     def send_file(self, file_path):
-        url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
-        files = {"document": open(file_path, "rb")}
-        payload = {"chat_id": self.chat_id}
         try:
+            url = f"https://api.telegram.org/bot{self.bot_token}/sendDocument"
+            payload = {"chat_id": self.chat_id}
+            files = {"document": open(file_path, "rb")}
             response = requests.post(url, data=payload, files=files)
             response.raise_for_status()
             logger.info(f"Файл '{file_path}' успешно отправлен")
         except requests.exceptions.RequestException as err:
             logger.error(f"Ошибка при отправлении файла: {err}")
+            self.send_notification(f"Не удалось отправить отчет: {err}")

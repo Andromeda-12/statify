@@ -1,8 +1,17 @@
 import os
+import shutil
 import openpyxl
 from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
 from loguru import logger
+
+
+def create_backup(file_name):
+    """Создает резервную копию файла с указанием даты"""
+    current_date = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_file_name = f"{file_name}_backup_{current_date}.xlsx"
+    shutil.copy(file_name, backup_file_name)
+    logger.info(f"Создана резервная копия файла: {backup_file_name}")
 
 
 def create_or_update_excel_report(establishments_data, establishment_dates):
@@ -18,6 +27,9 @@ def create_or_update_excel_report(establishments_data, establishment_dates):
 
     # Имя файла для текущего месяца
     file_name = f"Отчет_по_заведениям_{current_month:02}_{current_year}.xlsx"
+    
+    if os.path.exists(file_name):
+        create_backup(file_name)
 
     # Если файл не существует, создаем новую таблицу
     if not os.path.exists(file_name):
@@ -55,14 +67,18 @@ def create_or_update_excel_report(establishments_data, establishment_dates):
         ws.column_dimensions["A"].width = 30  # Ширина колонки с названием заведения
         ws.column_dimensions["B"].width = 25  # Ширина колонки с запросом
         ws.column_dimensions["C"].width = 8  # Ширина колонки с частотой
-        for col in range(4, len(headers) + 1):  # Колонки с датами начинаются с колонки D (индекс 4)
+        for col in range(
+            4, len(headers) + 1
+        ):  # Колонки с датами начинаются с колонки D (индекс 4)
             col_letter = get_column_letter(col)
-            ws.column_dimensions[col_letter].width = 10  # Устанавливаем ширину колонок с датами
+            ws.column_dimensions[col_letter].width = (
+                10  # Устанавливаем ширину колонок с датами
+            )
 
         # Добавляем формулу SUM для столбца частот
         last_data_col = get_column_letter(len(headers))
         for row in range(2, row_index):
-            ws.cell(row=row, column=3).value = f'=SUM(D{row}:{last_data_col}{row})'
+            ws.cell(row=row, column=3).value = f"=SUM(D{row}:{last_data_col}{row})"
 
         wb.save(file_name)
         logger.info(f"Создан новый Excel файл '{file_name}' для текущего месяца.")
@@ -77,7 +93,9 @@ def create_or_update_excel_report(establishments_data, establishment_dates):
     # Ищем индекс столбца для сегодняшней даты
     today_str = current_date.strftime("%d.%m.%Y")
     if today_str in headers:
-        today_col_index = headers.index(today_str) + 1  # Индекс колонки сегодняшнего дня
+        today_col_index = (
+            headers.index(today_str) + 1
+        )  # Индекс колонки сегодняшнего дня
     else:
         # Если сегодня не в заголовках, добавляем его
         headers.append(today_str)
@@ -125,22 +143,27 @@ def create_or_update_excel_report(establishments_data, establishment_dates):
                 continue
 
             # Обновляем количество обработок за сегодняшний день
-            if today_str in establishment_dates and establishment_id in establishment_dates[today_str]:
-                query_count = establishment_dates[today_str].get(establishment_id, {}).get(query, 0)
+            if (
+                today_str in establishment_dates
+                and establishment_id in establishment_dates[today_str]
+            ):
+                query_count = (
+                    establishment_dates[today_str]
+                    .get(establishment_id, {})
+                    .get(query, 0)
+                )
                 current_value = ws.cell(row=row_index, column=today_col_index).value
 
                 # Если ячейка пустая или содержит нечисловое значение, инициализируем её
                 if current_value is None or not isinstance(current_value, (int, float)):
                     ws.cell(row=row_index, column=today_col_index).value = query_count
                 else:
-                    ws.cell(
-                        row_index, column=today_col_index
-                    ).value += query_count
+                    ws.cell(row_index, column=today_col_index).value += query_count
 
     # Пересчитываем формулы SUM после обновления данных
     last_data_col = get_column_letter(len(headers))
     for row in range(2, ws.max_row + 1):
-        ws.cell(row=row, column=3).value = f'=SUM(D{row}:{last_data_col}{row})'
+        ws.cell(row=row, column=3).value = f"=SUM(D{row}:{last_data_col}{row})"
 
     # Сохраняем изменения в файле
     wb.save(file_name)
