@@ -21,7 +21,6 @@ def create_or_update_excel_report(establishments_data, search_rankings_by_date):
     establishments_data: Список заведений и запросов
     search_rankings_by_date: Данные о позициях и частоте запросов за каждый день
     """
-    print(search_rankings_by_date)
     # Определяем текущий месяц и год
     current_date = datetime.now()
     current_year = current_date.year
@@ -105,7 +104,6 @@ def create_or_update_excel_report(establishments_data, search_rankings_by_date):
                     day = int(date_str.split(".")[0])
                     col_index = 2 + day  # Колонка для соответствующего дня
 
-                    print(ws.cell(row=row_index, column=col_index).value)
                     # Если позиция не пуста, обновляем ячейку
                     if (
                         ws.cell(row=row_index, column=col_index).value == None
