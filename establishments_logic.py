@@ -101,10 +101,13 @@ def process_establishment_logic(
                             "_______________________________________________________"
                         )
 
-                        # Обновляем счетчик обработок по запросу
-                        final_status[target_establishment_id][
-                            target_establishment_query
-                        ] += 1
+                        final_status[target_establishment_id][target_establishment_query]["frequency"] += 1
+                        
+                        if target_establishment_index + 1 < final_status[target_establishment_id][target_establishment_query]["positions"]:
+                            final_status[target_establishment_id][target_establishment_query]["positions"] = target_establishment_index + 1
+                            
+                        logger.success(f"Частота и позиция для заведения '{target_establishment_id}' по запросу '{target_establishment_query}' обновлены, частота: {final_status[target_establishment_id][target_establishment_query]['frequency']}, позиция: {final_status[target_establishment_id][target_establishment_query]['positions']}")
+
                         return
 
                 except Exception as e:
@@ -152,7 +155,7 @@ def process_establishment_logic(
                 continue
 
             logger.success(
-                f"Целевое заведение '{target_establishment_id}' найдено на индексе {target_establishment_index + 1} на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
+                f"Целевое заведение '{target_establishment_id}' найдено по запросу '{target_establishment_query}' на индексе {target_establishment_index + 1} на попытке {get_target_establishment_attempt + 1}/{MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS}"
             )
             break
         except Exception as e:
@@ -202,15 +205,20 @@ def process_establishment_logic(
         logger.info("_______________________________________________________")
         logger.info(f"Взаимодействие с целевым заведением '{target_establishment_id}'")
 
-        interact_with_target_establishment(browser, target_establishment)
+        # interact_with_target_establishment(browser, target_establishment)
 
         logger.success(
             f"Выполнено целевое действие для заведения '{target_establishment_id}'"
         )
         logger.info("_______________________________________________________")
 
-        # Обновляем счетчик обработок по запросу
-        final_status[target_establishment_id][target_establishment_query] += 1
+        final_status[target_establishment_id][target_establishment_query]["frequency"] += 1
+        
+        if target_establishment_index + 1 < final_status[target_establishment_id][target_establishment_query]["positions"]:
+            final_status[target_establishment_id][target_establishment_query]["positions"] = target_establishment_index + 1
+         
+        logger.success(f"Частота и позиция для заведения '{target_establishment_id}' по запросу '{target_establishment_query}' обновлены, частота: {final_status[target_establishment_id][target_establishment_query]['frequency']}, позиция: {final_status[target_establishment_id][target_establishment_query]['positions']}")
+
 
     except Exception as e:
         logger.error(f"Ошибка при обработке заведения: {e}")

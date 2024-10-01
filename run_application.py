@@ -16,7 +16,13 @@ def run_application(notifier: Notifier):
 
     # Инициализация словаря для отслеживания количества успешных обработок
     final_status = {
-        establishment["id"]: {query: 0 for query in establishment["queries"]}
+        establishment["id"]: {
+            query: {
+                "frequency": 0,
+                "positions": float('inf'),
+            }
+            for query in establishment["queries"]
+        }
         for establishment in establishments_data
     }
 
@@ -46,40 +52,48 @@ def run_application(notifier: Notifier):
         log_report(establishments_data, final_status)
 
         if not IS_DEV:
-            # Обновляем данные по обработкам независимо от успешности
-            today = datetime.now().strftime(
-                "%d.%m.%Y"
-            )  # Текущая дата в формате дд.мм.гггг
-            # Даты обработок
-            establishment_dates = {}
-            # Инициализируем запись для текущей даты, если её нет
-            if today not in establishment_dates:
-                establishment_dates[today] = {}
+            today = datetime.now().strftime("%d.%m.%Y")
+            # Даты обработок заведений (сохранение позиций и частоты)
+            search_rankings_by_date = {}
 
+            # Инициализируем запись для текущей даты
+            if today not in search_rankings_by_date:
+                search_rankings_by_date[today] = {}
+
+            # Проходим по заведениям и записываем данные
             for establishment in establishments_data:
                 establishment_id = establishment["id"]
-                # Инициализируем запись для заведения, если её нет
-                if establishment_id not in establishment_dates[today]:
-                    establishment_dates[today][establishment_id] = {}
 
-                # Копируем данные по запросам из final_status для текущей даты
+                # Создаем запись для каждого заведения
+                if establishment_id not in search_rankings_by_date[today]:
+                    search_rankings_by_date[today][establishment_id] = {}
+
+                # Копируем данные по запросам из `final_status`
                 for query, count in final_status[establishment_id].items():
-                    establishment_dates[today][establishment_id][query] = count
+                    search_rankings_by_date[today][establishment_id][query] = {
+                        "position": count,  # Позиция запроса
+                        "frequency": count,  # Частота запроса
+                    }
 
-            # Создание или обновление Excel файла
+            # Создание или обновление Excel-файла
             file_name = create_or_update_excel_report(
-                establishments_data, establishment_dates
+                establishments_data, search_rankings_by_date
             )
+
+            # Отправка файла через notifier
             notifier.send_file(file_name)
 
-            logger.info(f"Следующий старт в {APPLICATION_RUN_TIME}")
+            logger.info(f"Следующий запуск запланирован на {APPLICATION_RUN_TIME}")
 
 
 def log_report(establishments_data, final_status):
     for establishment in establishments_data:
         establishment_id = establishment["id"]
         repeats_required = establishment["repeats"]
-        total_successful_repeats = sum(final_status[establishment_id].values())
+        total_successful_repeats = sum(
+            query_info["frequency"]
+            for query_info in final_status.get(establishment_id, {}).values()
+        )
 
         if total_successful_repeats == repeats_required:
             logger.success(
