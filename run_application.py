@@ -19,7 +19,7 @@ def run_application(notifier: Notifier):
         establishment["id"]: {
             query: {
                 "frequency": 0,
-                "positions": float('inf'),
+                "positions": float("inf"),
             }
             for query in establishment["queries"]
         }
@@ -69,10 +69,15 @@ def run_application(notifier: Notifier):
                     search_rankings_by_date[today][establishment_id] = {}
 
                 # Копируем данные по запросам из `final_status`
-                for query, count in final_status[establishment_id].items():
+                for query, data in final_status[establishment_id].items():
+                    # Извлекаем частоту и позицию из данных
+                    frequency = data["frequency"]  # Частота запроса
+                    position = data["positions"]  # Позиция запроса
+
+                    # Записываем в `search_rankings_by_date`
                     search_rankings_by_date[today][establishment_id][query] = {
-                        "position": count,  # Позиция запроса
-                        "frequency": count,  # Частота запроса
+                        "position": position,  # Заменяем бесконечность на пустоту
+                        "frequency": frequency,  # Частота запроса
                     }
 
             # Создание или обновление Excel-файла
