@@ -205,7 +205,7 @@ def process_establishment_logic(
         logger.info("_______________________________________________________")
         logger.info(f"Взаимодействие с целевым заведением '{target_establishment_id}'")
 
-        # interact_with_target_establishment(browser, target_establishment)
+        interact_with_target_establishment(browser, target_establishment)
 
         logger.success(
             f"Выполнено целевое действие для заведения '{target_establishment_id}'"
