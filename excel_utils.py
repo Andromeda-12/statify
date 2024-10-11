@@ -114,16 +114,11 @@ def create_or_update_excel_report(establishments_data, search_rankings_by_date):
                         frequency = position_data["frequency"]
                         position = position_data["position"]
                         
-                        print(establishment_id, frequency, position, position_data, search_rankings_by_date)
-
                         # Обновляем частоту во второй строке
                         current_frequency = ws.cell(row=2, column=col_index).value
                         ws.cell(row=2, column=col_index).value = (
                             current_frequency + frequency
                         )
-                        print("__________")
-                        print("current_frequency", current_frequency, frequency, current_frequency + frequency)
-                        print("__________")
 
                         # Обновляем ячейку с позицией запроса для данной даты
                         current_position = ws.cell(
