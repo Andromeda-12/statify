@@ -17,6 +17,7 @@ from establishment_interaction import (
     interact_with_target_establishment,
 )
 from establishments_scraping import get_establishments, get_target_establishment_index
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 
 def process_establishment_logic(
@@ -36,6 +37,7 @@ def process_establishment_logic(
     target_establishment_query = random.choice(target_establishment_queries)
     target_establishment_coordinates = establishment["coordinates"]
     target_establishment_address = establishment["address"]
+    target_establishment_unique_case = establishment.get("unique_case")
 
     latitude = target_establishment_coordinates.get("latitude")
     longitude = target_establishment_coordinates.get("longitude")
@@ -54,12 +56,23 @@ def process_establishment_logic(
     while get_target_establishment_attempt < MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS:
         try:
             input_coordinates(browser, target_establishment_coordinates)
-            input_query_and_search(browser, target_establishment_query)
-            
-            zoom_times = min(get_target_establishment_attempt + 1, MAX_ZOOM_TIMES)
+            if not target_establishment_unique_case:
+                input_query_and_search(browser, target_establishment_query)
 
-            for _ in range(zoom_times):
+                zoom_times = min(get_target_establishment_attempt + 1, MAX_ZOOM_TIMES)
+
+                for _ in range(zoom_times):
+                    zoom_in(browser)
+            else:
+                search_url = transform_yandex_maps_url(
+                    browser.driver.current_url, target_establishment_query
+                )
+                browser.driver.get(search_url)
+                time.sleep(5)
+                zoom_out(browser)
+                time.sleep(2)
                 zoom_in(browser)
+                time.sleep(2)
 
             establishments = get_establishments(browser)
 
@@ -101,12 +114,23 @@ def process_establishment_logic(
                             "_______________________________________________________"
                         )
 
-                        final_status[target_establishment_id][target_establishment_query]["frequency"] += 1
-                        
-                        if target_establishment_index + 1 < final_status[target_establishment_id][target_establishment_query]["positions"]:
-                            final_status[target_establishment_id][target_establishment_query]["positions"] = target_establishment_index + 1
-                            
-                        logger.success(f"Частота и позиция для заведения '{target_establishment_id}' по запросу '{target_establishment_query}' обновлены, частота: {final_status[target_establishment_id][target_establishment_query]['frequency']}, позиция: {final_status[target_establishment_id][target_establishment_query]['positions']}")
+                        final_status[target_establishment_id][
+                            target_establishment_query
+                        ]["frequency"] += 1
+
+                        if (
+                            target_establishment_index + 1
+                            < final_status[target_establishment_id][
+                                target_establishment_query
+                            ]["positions"]
+                        ):
+                            final_status[target_establishment_id][
+                                target_establishment_query
+                            ]["positions"] = (target_establishment_index + 1)
+
+                        logger.success(
+                            f"Частота и позиция для заведения '{target_establishment_id}' по запросу '{target_establishment_query}' обновлены, частота: {final_status[target_establishment_id][target_establishment_query]['frequency']}, позиция: {final_status[target_establishment_id][target_establishment_query]['positions']}"
+                        )
 
                         return
 
@@ -212,13 +236,23 @@ def process_establishment_logic(
         )
         logger.info("_______________________________________________________")
 
-        final_status[target_establishment_id][target_establishment_query]["frequency"] += 1
-        
-        if target_establishment_index + 1 < final_status[target_establishment_id][target_establishment_query]["positions"]:
-            final_status[target_establishment_id][target_establishment_query]["positions"] = target_establishment_index + 1
-         
-        logger.success(f"Частота и позиция для заведения '{target_establishment_id}' по запросу '{target_establishment_query}' обновлены, частота: {final_status[target_establishment_id][target_establishment_query]['frequency']}, позиция: {final_status[target_establishment_id][target_establishment_query]['positions']}")
+        final_status[target_establishment_id][target_establishment_query][
+            "frequency"
+        ] += 1
 
+        if (
+            target_establishment_index + 1
+            < final_status[target_establishment_id][target_establishment_query][
+                "positions"
+            ]
+        ):
+            final_status[target_establishment_id][target_establishment_query][
+                "positions"
+            ] = (target_establishment_index + 1)
+
+        logger.success(
+            f"Частота и позиция для заведения '{target_establishment_id}' по запросу '{target_establishment_query}' обновлены, частота: {final_status[target_establishment_id][target_establishment_query]['frequency']}, позиция: {final_status[target_establishment_id][target_establishment_query]['positions']}"
+        )
 
     except Exception as e:
         logger.error(f"Ошибка при обработке заведения: {e}")
@@ -435,3 +469,79 @@ def zoom_in(browser: Browser):
         logger.error("Превышено время ожидания кнопки 'Приблизить'")
     except Exception as e:
         logger.error(f"Произошла ошибка при попытке нажать на кнопку 'Приблизить': {e}")
+
+
+def zoom_out(browser: Browser):
+    """
+    Находит кнопку отдаления и нажимает на нее
+    """
+    try:
+        zoom_out_button = browser.driver.find_element(
+            By.XPATH, '//button[@aria-label="Отдалить"]'
+        )
+        browser.move_to_element_and_click(zoom_out_button)
+        logger.info("Кнопка 'Отдалить' нажата")
+        time.sleep(1.5)
+    except NoSuchElementException:
+        logger.error("Кнопка 'Отдалить' не найдена на странице")
+    except TimeoutException:
+        logger.error("Превышено время ожидания кнопки 'Отдалить'")
+    except Exception as e:
+        logger.error(f"Произошла ошибка при попытке нажать на кнопку 'Отдалить': {e}")
+
+
+def transform_yandex_maps_url(original_url, query):
+    """
+    Преобразует исходную ссылку на Яндекс.Карты с координатами в ссылку с поисковым запросом.
+
+    Args:
+        original_url (str): Исходная ссылка на Яндекс.Карты.
+        query (str): Запрос для поиска (например, "автосервис").
+
+    Returns:
+        str: Преобразованная ссылка с новым запросом.
+    """
+    # Парсим исходную ссылку
+    parsed_url = urlparse(original_url)
+
+    # Извлекаем параметры запроса
+    query_params = parse_qs(parsed_url.query)
+
+    # Ищем координаты в параметрах ll или sll
+    ll = query_params.get("ll")
+    sll = query_params.get("sll")
+
+    # Если координаты есть в параметре ll, используем их, иначе берем sll
+    coordinates = ll[0] if ll else (sll[0] if sll else None)
+
+    if not coordinates:
+        raise ValueError("Координаты не найдены в URL")
+
+    # Извлекаем часть пути, которая указывает на регион и город
+    path_parts = parsed_url.path.split("/")
+    region_and_city = "/".join(path_parts[2:4])
+
+    # Устанавливаем новый путь URL с поисковым запросом
+    new_path = f"/maps/{region_and_city}/search/{query}/"
+
+    # Обновляем параметры запроса
+    new_query_params = {
+        "ll": coordinates,
+        "sll": coordinates,
+        "z": 18,  # Задаем масштаб
+    }
+
+    # Строим новый URL
+    new_query_string = urlencode(new_query_params, doseq=True)
+    new_url = urlunparse(
+        (
+            parsed_url.scheme,  # схема (https)
+            parsed_url.netloc,  # домен (yandex.ru)
+            new_path,  # новый путь с запросом
+            "",  # параметры
+            new_query_string,  # новый строка параметров
+            "",  # фрагмент
+        )
+    )
+
+    return new_url
