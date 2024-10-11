@@ -16,7 +16,11 @@ def create_backup(file_name):
 
 def create_or_update_excel_report(establishments_data, search_rankings_by_date):
     """
-    Создает или обновляет Excel-отчет по заведениям.
+    Создает или обновляет Excel-отчет по заведениям в транспонированном виде.
+    Структура: первая строка "Запрос", затем идут запросы; вторая строка "Частота", затем частоты запросов.
+    Далее идут строки с датами, а в колонках — позиции запросов.
+
+    Если функция вызывается несколько раз, данные обновляются и суммируются.
 
     establishments_data: Список заведений и запросов
     search_rankings_by_date: Данные о позициях и частоте запросов за каждый день
@@ -54,74 +58,85 @@ def create_or_update_excel_report(establishments_data, search_rankings_by_date):
         if establishment_id not in wb.sheetnames:
             ws = wb.create_sheet(title=establishment_id)
 
-            # Устанавливаем заголовки столбцов
-            headers = ["Запрос", "Частота"]
-            for day in range(1, days_in_month + 1):
-                date_str = f"{day:02}.{current_month:02}.{current_year}"
-                headers.append(date_str)
-
+            # Устанавливаем первую строку: заголовок "Запрос", а затем запросы
+            headers = ["Запрос"] + [query for query in queries]
             ws.append(headers)
 
+            # Устанавливаем вторую строку: заголовок "Частота" и частоты запросов
+            frequency_row = ["Частота"] + [0] * len(queries)
+            ws.append(frequency_row)
+
             # Устанавливаем ширину колонок
-            ws.column_dimensions["A"].width = 30  # Запрос
-            ws.column_dimensions["B"].width = 10  # Частота
-            for col in range(3, len(headers) + 1):  # Колонки с датами
+            ws.column_dimensions["A"].width = 20  # Столбец "Запрос"/"Частота"
+            for col in range(2, len(headers) + 1):  # Колонки с запросами
                 col_letter = get_column_letter(col)
-                ws.column_dimensions[col_letter].width = 10
+                ws.column_dimensions[col_letter].width = 20
         else:
             ws = wb[establishment_id]
 
-        # Проверка существующих запросов в Excel
+        # Создаем словарь для поиска колонок запросов
         existing_queries = {
-            ws.cell(row=row, column=1).value: row for row in range(2, ws.max_row + 1)
+            ws.cell(row=1, column=col).value: col for col in range(2, ws.max_column + 1)
         }
 
-        for query in queries:
-            row_index = existing_queries.get(query)
+        # Создаем словарь для поиска существующих строк по дате
+        existing_dates = {
+            ws.cell(row=row, column=1).value: row for row in range(3, ws.max_row + 1)
+        }
 
-            if row_index is None:
-                # Добавляем новый запрос
-                row_index = ws.max_row + 1
-                ws.append([query, 0] + [""] * days_in_month)
+        # Добавляем или обновляем данные по датам
+        for day in range(1, days_in_month + 1):
+            date_str = f"{day:02}.{current_month:02}.{current_year}"
 
-            # Обновляем частоту запросов
-            total_frequency = 0
-
-            # Обновляем позиции по дням
-            for date_str, search_info in search_rankings_by_date.items():
-                if (
-                    establishment_id in search_info
-                    and query in search_info[establishment_id]
-                ):
-                    position_data = search_info[establishment_id][query]
-
-                    # Извлекаем частоту и позицию
-                    frequency = position_data[
-                        "frequency"
-                    ]  # Извлекаем значение frequency
-                    position = position_data["position"]  # Извлекаем значение positions
-
-                    day = int(date_str.split(".")[0])
-                    col_index = 2 + day  # Колонка для соответствующего дня
-
-                    # Если позиция не пуста, обновляем ячейку
-                    if (
-                        ws.cell(row=row_index, column=col_index).value == None
-                        or ws.cell(row=row_index, column=col_index).value == ""
-                        or position < ws.cell(row=row_index, column=col_index).value
-                    ):
-                        ws.cell(row=row_index, column=col_index).value = position
-
-                    # Добавляем частоту запросов за этот день
-                    total_frequency += frequency  # Убедитесь, что это целое число
-
-            # Обновляем общую частоту в столбце "Частота", если она еще не была установлена
-            if ws.cell(row=row_index, column=2).value == 0:
-                ws.cell(row=row_index, column=2).value = total_frequency
+            if date_str in existing_dates:
+                # Если дата уже существует, обновляем значения
+                row_index = existing_dates[date_str]
             else:
-                ws.cell(
-                    row=row_index, column=2
-                ).value += total_frequency  # Увеличиваем частоту
+                # Если дата не существует, создаем новую строку
+                row_index = ws.max_row + 1
+                ws.append([date_str] + [""] * len(queries))
+                existing_dates[date_str] = row_index
+
+            # Обновляем позиции для каждого запроса
+            if date_str in search_rankings_by_date:
+                for query in queries:
+                    col_index = existing_queries.get(query)
+
+                    if (
+                        establishment_id in search_rankings_by_date[date_str]
+                        and query in search_rankings_by_date[date_str][establishment_id]
+                    ):
+                        position_data = search_rankings_by_date[date_str][
+                            establishment_id
+                        ][query]
+
+                        # Извлекаем частоту и позицию
+                        frequency = position_data["frequency"]
+                        position = position_data["position"]
+                        
+                        print(establishment_id, frequency, position, position_data, search_rankings_by_date)
+
+                        # Обновляем частоту во второй строке
+                        current_frequency = ws.cell(row=2, column=col_index).value
+                        ws.cell(row=2, column=col_index).value = (
+                            current_frequency + frequency
+                        )
+                        print("__________")
+                        print("current_frequency", current_frequency, frequency, current_frequency + frequency)
+                        print("__________")
+
+                        # Обновляем ячейку с позицией запроса для данной даты
+                        current_position = ws.cell(
+                            row=row_index, column=col_index
+                        ).value
+
+                        # Если ячейка уже содержит значение, суммируем его с новым
+                        if current_position not in (None, "", 0):
+                            ws.cell(row=row_index, column=col_index).value = (
+                                current_position
+                            )
+                        else:
+                            ws.cell(row=row_index, column=col_index).value = position
 
     # Сохраняем изменения в файле
     wb.save(file_name)
