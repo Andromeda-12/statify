@@ -38,6 +38,7 @@ def process_establishment_logic(
     target_establishment_coordinates = establishment["coordinates"]
     target_establishment_address = establishment["address"]
     target_establishment_unique_case = establishment.get("unique_case")
+    target_establishment_action_order = establishment.get("action_order")
 
     latitude = target_establishment_coordinates.get("latitude")
     longitude = target_establishment_coordinates.get("longitude")
@@ -105,7 +106,7 @@ def process_establishment_logic(
                             f"Взаимодействие с целевым заведением '{target_establishment_id}'"
                         )
 
-                        interact_with_single_target_establishment(browser)
+                        interact_with_single_target_establishment(browser, target_establishment_action_order)
 
                         logger.success(
                             f"Выполнено целевое действие для заведения '{target_establishment_id}'"
@@ -229,7 +230,7 @@ def process_establishment_logic(
         logger.info("_______________________________________________________")
         logger.info(f"Взаимодействие с целевым заведением '{target_establishment_id}'")
 
-        interact_with_target_establishment(browser, target_establishment)
+        interact_with_target_establishment(browser, target_establishment, target_establishment_action_order)
 
         logger.success(
             f"Выполнено целевое действие для заведения '{target_establishment_id}'"

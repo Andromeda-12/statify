@@ -17,19 +17,23 @@ def interact_with_establishment(browser: Browser, establishment: WebElement):
 
 
 def interact_with_target_establishment(
-    browser: Browser, target_establishment: WebElement
+    browser: Browser,
+    target_establishment: WebElement,
+    target_establishment_action_order,
 ):
     interact_with_establishment(browser, target_establishment)
     open_establishment_overview(browser)
-    perform_target_action(browser)
+    perform_target_action(browser, target_establishment_action_order)
 
 
-def interact_with_single_target_establishment(browser: Browser):
+def interact_with_single_target_establishment(
+    browser: Browser, target_establishment_action_order
+):
     check_modal_window(browser)
     browse_establishment_photos(browser)
     browse_establishment_reviews_multiple_times(browser)
     open_establishment_overview(browser)
-    perform_target_action(browser)
+    perform_target_action(browser, target_establishment_action_order)
 
 
 def check_modal_window(browser: Browser):
@@ -224,18 +228,36 @@ def browse_establishment_reviews(browser: Browser):
         raise
 
 
-def perform_target_action(browser: Browser):
+def perform_target_action(browser: Browser, action_order=None):
     logger.info("Выполняем целевое действие")
-    actions = [
-        (click_whatsapp_link, "Переход на WhatsApp выполнен"),
-        (click_telegram_link, "Переход на Telegram выполнен"),
-        (click_website_link, "Переход на сайт выполнен"),
-    ]
-    for action, success_message in actions:
+
+    action_map = {
+        "whatsapp": (click_whatsapp_link, "Переход на WhatsApp выполнен"),
+        "telegram": (click_telegram_link, "Переход на Telegram выполнен"),
+        "site": (click_website_link, "Переход на сайт выполнен"),
+    }
+
+    ordered_actions = None
+
+    if action_order:
+        ordered_actions = [
+            action_map[action.strip().lower()]
+            for action in action_order
+            if action.strip().lower() in action_map
+        ]
+    else:
+        ordered_actions = [
+            (click_whatsapp_link, "Переход на WhatsApp выполнен"),
+            (click_telegram_link, "Переход на Telegram выполнен"),
+            (click_website_link, "Переход на сайт выполнен"),
+        ]
+
+    for action, success_message in ordered_actions:
         if action(browser):
             logger.success(success_message)
             return_to_yandex_map_after_target_action(browser)
             return
+
     logger.critical("Не удалось перейти ни по одной ссылке")
     raise Exception("Не удалось перейти ни по одной ссылке")
 
@@ -289,10 +311,15 @@ def click_whatsapp_link(browser: Browser):
 
 def click_website_link(browser: Browser):
     try:
-        scroll_container = browser.wait_for_condition(
-            EC.element_to_be_clickable((By.CLASS_NAME, "scroll__container")),
-            5,
+        container = browser.wait_for_condition(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, ".sidebar-view._name_search-result")
+            ),
+            5
         )
+        
+        scroll_container = container.find_element(By.CLASS_NAME, "scroll__container")
+
         browser.driver.execute_script("arguments[0].scrollTop = 0;", scroll_container)
 
         button = browser.wait_for_condition(
