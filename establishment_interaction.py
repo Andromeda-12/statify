@@ -135,7 +135,7 @@ def browse_establishment_photos(browser: Browser):
         time.sleep(3)
         close_button = browser.wait_for_condition(
             EC.presence_of_element_located(
-                (By.CSS_SELECTOR, ".photos-player-view__button._type_close")
+                (By.CSS_SELECTOR, ".media-header__button._type_close")
             ),
             10,
         )
