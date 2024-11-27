@@ -529,7 +529,7 @@ def transform_yandex_maps_url(original_url, query):
     new_query_params = {
         "ll": coordinates,
         "sll": coordinates,
-        "z": 18,  # Задаем масштаб
+        "z": 20,  # Задаем масштаб
     }
 
     # Строим новый URL
