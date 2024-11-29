@@ -234,6 +234,7 @@ def perform_target_action(browser: Browser, action_order=None):
     action_map = {
         "whatsapp": (click_whatsapp_link, "Переход на WhatsApp выполнен"),
         "telegram": (click_telegram_link, "Переход на Telegram выполнен"),
+        "vk": (click_telegram_link, "Переход на VK выполнен"),
         "site": (click_website_link, "Переход на сайт выполнен"),
     }
 
@@ -250,6 +251,7 @@ def perform_target_action(browser: Browser, action_order=None):
             (click_whatsapp_link, "Переход на WhatsApp выполнен"),
             (click_telegram_link, "Переход на Telegram выполнен"),
             (click_website_link, "Переход на сайт выполнен"),
+            (click_vk_link, "Переход на VK выполнен"),
         ]
 
     for action, success_message in ordered_actions:
@@ -315,9 +317,9 @@ def click_website_link(browser: Browser):
             EC.presence_of_element_located(
                 (By.CSS_SELECTOR, ".sidebar-view._name_search-result")
             ),
-            5
+            5,
         )
-        
+
         scroll_container = container.find_element(By.CLASS_NAME, "scroll__container")
 
         browser.driver.execute_script("arguments[0].scrollTop = 0;", scroll_container)
@@ -331,6 +333,33 @@ def click_website_link(browser: Browser):
         return True
     except Exception:
         logger.warning("Кнопка сайта не найдена")
+        return False
+
+
+def click_vk_link(browser: Browser):
+    try:
+        container = browser.wait_for_condition(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, ".sidebar-view._name_search-result")
+            ),
+            5,
+        )
+
+        scroll_container = container.find_element(By.CLASS_NAME, "scroll__container")
+
+        browser.driver.execute_script("arguments[0].scrollTop = 0;", scroll_container)
+
+        button = browser.wait_for_condition(
+            EC.element_to_be_clickable(
+                (By.CSS_SELECTOR, '[aria-label="Соцсети, vkontakte"]')
+            ),
+            5,
+        )
+        browser.wait_for_condition(EC.element_to_be_clickable(button), 15)
+        browser.move_to_element_and_click(button)
+        return True
+    except Exception:
+        logger.warning("Кнопка VK не найдена")
         return False
 
 
