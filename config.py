@@ -18,7 +18,7 @@ args = parse_args()
 IS_DEV = args.dev
 
 # Путь к драйверу
-EDGE_DRIVER_PATH = os.getenv("EDGE_DRIVER_PATH")
+DRIVER_PATH = os.getenv("DRIVER_PATH")
 
 # Информация для Telegram-бота
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -42,18 +42,19 @@ APPLICATION_RUN_TIME = os.getenv("APPLICATION_RUN_TIME")
 SEND_STATUS_NOTIFICATION_TIME = os.getenv("SEND_STATUS_NOTIFICATION_TIME")
 
 # Время, которое браузер ждет выполнения условия (поиск элементов)
-BROWSER_CONDITION_WAIT_TIME = 30
+BROWSER_CONDITION_WAIT_TIME = 5
 
 # Количество попыток, сколько раз пытаемся обработать заведение в случае ошибки
-MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS = 5
+MAX_PROCESS_ESTABLISHMENTS_ATTEMPTS = 8
 
 # Количество попыток для получения списков заведения
-MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS = 2
+MAX_GET_ESTABLISHMENTS_LIST_ATTEMPTS = 1
 # Количество попыток для получения целевого заведения в списке заведений
-MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS = 2
+MAX_GET_TARGET_ESTABLISHMENTS_ATTEMPTS = 1
 
 # Количество заведений, которое будет просмотрено перед целевым заведением
-MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET = 5
+MAX_BROWSED_ESTABLISHMENTS_BEFORE_TARGET = 0
 # Количество, сколько раз нужно посмотреть отзывы
+MAX_BROWSE_ESTABLISHMENTS_REVIEWS_ITERATIONS = 1
 # Максимальное количество, сколько нужно раз нажать на кнопку зума
-MAX_ZOOM_TIMES = 5
+MAX_ZOOM_TIMES = 4

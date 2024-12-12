@@ -106,7 +106,9 @@ def process_establishment_logic(
                             f"Взаимодействие с целевым заведением '{target_establishment_id}'"
                         )
 
-                        interact_with_single_target_establishment(browser, target_establishment_action_order)
+                        interact_with_single_target_establishment(
+                            browser, target_establishment_action_order
+                        )
 
                         logger.success(
                             f"Выполнено целевое действие для заведения '{target_establishment_id}'"
@@ -230,7 +232,9 @@ def process_establishment_logic(
         logger.info("_______________________________________________________")
         logger.info(f"Взаимодействие с целевым заведением '{target_establishment_id}'")
 
-        interact_with_target_establishment(browser, target_establishment, target_establishment_action_order)
+        interact_with_target_establishment(
+            browser, target_establishment, target_establishment_action_order
+        )
 
         logger.success(
             f"Выполнено целевое действие для заведения '{target_establishment_id}'"
@@ -378,9 +382,10 @@ def input_coordinates(browser: Browser, coordinates: dict):
     Вводит координаты в инпут поиска на карте и ожидает загрузки карты
     """
     try:
+        time.sleep(2)
         # Находим инпут для поиска мест и адресов
         search_input = browser.driver.find_element(
-            By.XPATH, '//input[@placeholder="Поиск мест и адресов"]'
+            By.XPATH, '//input[@placeholder="Поиск и выбор мест"]'
         )
         browser.move_to_element_and_click(search_input)
         # Очищаем инпут
@@ -404,6 +409,9 @@ def input_coordinates(browser: Browser, coordinates: dict):
         logger.error(
             f"Не удалось найти инпут для поиска мест и адресов, {browser.driver.current_url}"
         )
+        captcha = browser.driver.find_element(By.CLASS_NAME, "CheckboxCaptcha-Anchor")
+        browser.move_to_element_and_click(captcha)
+        
         raise
     except Exception as e:
         logger.error(f"Ошибка при вводе координат, {browser.driver.current_url}: {e}")

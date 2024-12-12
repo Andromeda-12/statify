@@ -2,13 +2,20 @@ import random
 import time
 from loguru import logger
 from selenium import webdriver
-from selenium.webdriver.edge.options import Options
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException
-from config import BROWSER_CONDITION_WAIT_TIME, EDGE_DRIVER_PATH
+from config import BROWSER_CONDITION_WAIT_TIME, DRIVER_PATH
+from selenium_stealth import stealth
+
+# initializing a list with two User Agents
+useragentarray = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36",
+]
 
 
 class Browser:
@@ -26,15 +33,46 @@ class Browser:
         self.options.add_argument("--start-maximized")
         # Выключение логов браузера
         self.options.add_experimental_option("excludeSwitches", ["enable-logging"])
+        # exclude the collection of enable-automation switches
+        self.options.add_experimental_option("excludeSwitches", ["enable-automation"])
         # Отключение определения браузера как вебдрайвер
         self.options.add_argument("--disable-blink-features=AutomationControlled")
+        self.options.add_argument("--headless")
+        # adding argument to disable the AutomationControlled flag
+        # turn-off userAutomationExtension
+        self.options.add_experimental_option("useAutomationExtension", False)
 
     def start_browser(self):
         """Запуск браузера"""
         try:
-            service = Service(EDGE_DRIVER_PATH)
-            self.driver = webdriver.Edge(service=service, options=self.options)
+            service = Service(executable_path='chromedriver.exe')
+            self.driver = webdriver.Chrome(service=service, options=self.options)
+
+            # changing the property of the navigator value for webdriver to undefined
+            self.driver.execute_script(
+                "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+            )
+
+            for i in range(len(useragentarray)):
+                # setting User Agent iteratively as Chrome 108 and 107
+                self.driver.execute_cdp_cmd(
+                    "Network.setUserAgentOverride", {"userAgent": useragentarray[i]}
+                )
+                self.driver.get("https://httpbin.io/headers")
+
+            stealth(
+                self.driver,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36",
+                languages=["ru-RU", "ru"],
+                vendor="Google Inc.",
+                platform="Win32",
+                webgl_vendor="Intel Inc.",
+                renderer="Intel Iris OpenGL Engine",
+                fix_hairline=True,
+            )
+
             self.is_open = True
+
             logger.success("Браузер успешно запущен")
         except Exception as e:
             logger.error(f"Ошибка при запуске браузера: {e}")
@@ -66,7 +104,9 @@ class Browser:
             return WebDriverWait(self.driver, wait_time).until(func)
         except TimeoutException:
             if not silent:
-                logger.warning(f"Условие не было выполнено в течение {wait_time} секунд")
+                logger.warning(
+                    f"Условие не было выполнено в течение {wait_time} секунд"
+                )
                 raise
 
     def scroll_to(self, element: WebElement):
